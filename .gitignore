@@ -4,7 +4,6 @@ dist
 dist-ssr
 *.local
 .vercel
-convex/_generated
 count.txt
 .env
 .nitro
