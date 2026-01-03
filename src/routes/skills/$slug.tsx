@@ -31,7 +31,7 @@ function SkillDetail() {
   const versions = useQuery(
     api.skills.listVersions,
     skill ? { skillId: skill._id, limit: 10 } : 'skip',
-  )
+  ) as Doc<'skillVersions'>[] | undefined
 
   const isStarred = useQuery(
     api.stars.isStarred,
@@ -40,13 +40,16 @@ function SkillDetail() {
   const comments = useQuery(
     api.comments.listBySkill,
     skill ? { skillId: skill._id, limit: 50 } : 'skip',
-  )
+  ) as Array<{ comment: Doc<'comments'>; user: Doc<'users'> | null }> | undefined
 
   const canManage = Boolean(
     me && skill && (me._id === skill.ownerUserId || ['admin', 'moderator'].includes(me.role ?? '')),
   )
 
-  const versionById = new Map((versions ?? []).map((version) => [version._id, version]))
+  const versionById = new Map<Id<'skillVersions'>, Doc<'skillVersions'>>(
+    (versions ?? []).map((version) => [version._id, version]),
+  )
+  const tagEntries = Object.entries(skill.tags ?? {}) as Array<[string, Id<'skillVersions'>]>
 
   useEffect(() => {
     if (!latestVersion) return
@@ -138,33 +141,31 @@ function SkillDetail() {
               {(comments ?? []).length === 0 ? (
                 <div className="stat">No comments yet.</div>
               ) : (
-                (comments ?? []).map(
-                  (entry: { comment: Doc<'comments'>; user: Doc<'users'> | null }) => (
-                    <div
-                      key={entry.comment._id}
-                      className="stat"
-                      style={{ alignItems: 'flex-start' }}
-                    >
-                      <div>
-                        <strong>@{entry.user?.handle ?? entry.user?.name ?? 'user'}</strong>
-                        <div style={{ color: '#5c554e' }}>{entry.comment.body}</div>
-                      </div>
-                      {isAuthenticated &&
-                      me &&
-                      (me._id === entry.comment.userId ||
-                        me.role === 'admin' ||
-                        me.role === 'moderator') ? (
-                        <button
-                          className="btn"
-                          type="button"
-                          onClick={() => void removeComment({ commentId: entry.comment._id })}
-                        >
-                          Delete
-                        </button>
-                      ) : null}
+                (comments ?? []).map((entry) => (
+                  <div
+                    key={entry.comment._id}
+                    className="stat"
+                    style={{ alignItems: 'flex-start' }}
+                  >
+                    <div>
+                      <strong>@{entry.user?.handle ?? entry.user?.name ?? 'user'}</strong>
+                      <div style={{ color: '#5c554e' }}>{entry.comment.body}</div>
                     </div>
-                  ),
-                )
+                    {isAuthenticated &&
+                    me &&
+                    (me._id === entry.comment.userId ||
+                      me.role === 'admin' ||
+                      me.role === 'moderator') ? (
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={() => void removeComment({ commentId: entry.comment._id })}
+                      >
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -198,7 +199,7 @@ function SkillDetail() {
               Tags
             </h3>
             <div style={{ display: 'grid', gap: 8 }}>
-              {Object.entries(skill.tags ?? {}).map(([tag, versionId]) => (
+              {tagEntries.map(([tag, versionId]) => (
                 <div key={tag} className="stat">
                   <strong>{tag}</strong>
                   <span>{versionById.get(versionId)?.version ?? versionId}</span>
@@ -231,7 +232,7 @@ function SkillDetail() {
                 <select
                   className="search-input"
                   value={tagVersionId ?? ''}
-                  onChange={(event) => setTagVersionId(event.target.value)}
+                  onChange={(event) => setTagVersionId(event.target.value as Id<'skillVersions'>)}
                 >
                   {(versions ?? []).map((version) => (
                     <option key={version._id} value={version._id}>

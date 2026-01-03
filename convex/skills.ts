@@ -1,6 +1,7 @@
 import { type Id, v } from 'convex/values'
 import semver from 'semver'
-import { internal } from './_generated/api'
+import { api, internal } from './_generated/api'
+import type { Doc } from './_generated/dataModel'
 import { action, internalMutation, mutation, query } from './_generated/server'
 import { assertRole, requireUser, requireUserFromAction } from './lib/access'
 import { generateEmbedding } from './lib/embeddings'
@@ -188,9 +189,9 @@ export const publishVersion = action({
 export const getReadme = action({
   args: { versionId: v.id('skillVersions') },
   handler: async (ctx, args) => {
-    const version = await ctx.runQuery(api.skills.getVersionById, {
+    const version = (await ctx.runQuery(api.skills.getVersionById, {
       versionId: args.versionId,
-    })
+    })) as Doc<'skillVersions'> | null
     if (!version) throw new Error('Version not found')
     const readmeFile = version.files.find(
       (file) => file.path.toLowerCase() === 'skill.md' || file.path.toLowerCase() === 'skills.md',

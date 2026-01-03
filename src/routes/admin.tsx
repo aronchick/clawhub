@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import type { Doc } from '../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/admin')({
   component: Admin,
 })
 
 function Admin() {
-  const users = useQuery(api.users.list, { limit: 50 })
-  const skills = useQuery(api.skills.list, { limit: 20 })
+  const users = useQuery(api.users.list, { limit: 50 }) as Doc<'users'>[] | undefined
+  const skills = useQuery(api.skills.list, { limit: 20 }) as Doc<'skills'>[] | undefined
   const setRole = useMutation(api.users.setRole)
   const setApproved = useMutation(api.skills.setRedactionApproved)
   const setBatch = useMutation(api.skills.setBatch)
