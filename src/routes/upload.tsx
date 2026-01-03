@@ -37,7 +37,11 @@ function Upload() {
       setError('Total size exceeds 50MB per version.')
       return
     }
-    if (!files.some((file) => file.name.toLowerCase() === 'skill.md' || file.name.toLowerCase() === 'skills.md')) {
+    if (
+      !files.some(
+        (file) => file.name.toLowerCase() === 'skill.md' || file.name.toLowerCase() === 'skills.md',
+      )
+    ) {
       setError('SKILL.md is required.')
       return
     }
@@ -142,7 +146,11 @@ function Upload() {
         <button className="btn btn-primary" type="submit">
           Publish
         </button>
-        {error ? <div className="stat" style={{ color: '#b84a3a' }}>{error}</div> : null}
+        {error ? (
+          <div className="stat" style={{ color: '#b84a3a' }}>
+            {error}
+          </div>
+        ) : null}
         {status ? <div className="stat">{status}</div> : null}
       </form>
     </main>
