@@ -3,13 +3,17 @@ import { Link } from '@tanstack/react-router'
 import { useConvexAuth, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { gravatarUrl } from '../lib/gravatar'
+import { useThemeMode } from '../lib/theme'
 
 export default function Header() {
   const { isAuthenticated, isLoading } = useConvexAuth()
   const { signIn, signOut } = useAuthActions()
   const me = useQuery(api.users.me)
+  const { mode, setMode } = useThemeMode()
 
   const avatar = me?.image ?? (me?.email ? gravatarUrl(me.email) : undefined)
+  const handle = me?.handle ?? me?.displayName ?? 'user'
+  const initial = (me?.displayName ?? me?.name ?? handle).charAt(0).toUpperCase()
 
   return (
     <header className="navbar">
@@ -25,22 +29,37 @@ export default function Header() {
           {me?.role === 'admin' || me?.role === 'moderator' ? <Link to="/admin">Admin</Link> : null}
         </nav>
         <div className="nav-actions">
-          {isAuthenticated && me ? (
-            <>
-              <Link to="/settings" className="btn">
-                <span className="mono">@{me.handle ?? me.displayName ?? 'user'}</span>
-              </Link>
-              <button className="btn" type="button" onClick={() => void signOut()}>
-                Sign out
+          <div className="theme-toggle">
+            {(['system', 'light', 'dark'] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`theme-toggle-btn${mode === value ? ' is-active' : ''}`}
+                onClick={() => setMode(value)}
+                aria-pressed={mode === value}
+              >
+                {value === 'system' ? 'System' : value.charAt(0).toUpperCase() + value.slice(1)}
               </button>
-              {avatar ? (
-                <img
-                  src={avatar}
-                  alt={me.displayName ?? me.name ?? 'User avatar'}
-                  style={{ width: 36, height: 36, borderRadius: '50%' }}
-                />
-              ) : null}
-            </>
+            ))}
+          </div>
+          {isAuthenticated && me ? (
+            <details className="user-menu">
+              <summary className="user-menu-trigger">
+                {avatar ? (
+                  <img src={avatar} alt={me.displayName ?? me.name ?? 'User avatar'} />
+                ) : (
+                  <span className="user-menu-fallback">{initial}</span>
+                )}
+                <span className="mono">@{handle}</span>
+                <span className="user-menu-chevron">▾</span>
+              </summary>
+              <div className="user-menu-panel">
+                <Link to="/settings">Settings</Link>
+                <button type="button" onClick={() => void signOut()}>
+                  Sign out
+                </button>
+              </div>
+            </details>
           ) : (
             <button
               className="btn btn-primary"
