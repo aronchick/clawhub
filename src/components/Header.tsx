@@ -4,6 +4,14 @@ import { useConvexAuth, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { gravatarUrl } from '../lib/gravatar'
 import { useThemeMode } from '../lib/theme'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 
 export default function Header() {
   const { isAuthenticated, isLoading } = useConvexAuth()
@@ -29,37 +37,39 @@ export default function Header() {
           {me?.role === 'admin' || me?.role === 'moderator' ? <Link to="/admin">Admin</Link> : null}
         </nav>
         <div className="nav-actions">
-          <div className="theme-toggle">
-            {(['system', 'light', 'dark'] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={`theme-toggle-btn${mode === value ? ' is-active' : ''}`}
-                onClick={() => setMode(value)}
-                aria-pressed={mode === value}
-              >
-                {value === 'system' ? 'System' : value.charAt(0).toUpperCase() + value.slice(1)}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            type="single"
+            value={mode}
+            onValueChange={(value) => {
+              if (value) setMode(value as 'system' | 'light' | 'dark')
+            }}
+            aria-label="Theme mode"
+          >
+            <ToggleGroupItem value="system">System</ToggleGroupItem>
+            <ToggleGroupItem value="light">Light</ToggleGroupItem>
+            <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
+          </ToggleGroup>
           {isAuthenticated && me ? (
-            <details className="user-menu">
-              <summary className="user-menu-trigger">
-                {avatar ? (
-                  <img src={avatar} alt={me.displayName ?? me.name ?? 'User avatar'} />
-                ) : (
-                  <span className="user-menu-fallback">{initial}</span>
-                )}
-                <span className="mono">@{handle}</span>
-                <span className="user-menu-chevron">▾</span>
-              </summary>
-              <div className="user-menu-panel">
-                <Link to="/settings">Settings</Link>
-                <button type="button" onClick={() => void signOut()}>
-                  Sign out
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="user-trigger" type="button">
+                  {avatar ? (
+                    <img src={avatar} alt={me.displayName ?? me.name ?? 'User avatar'} />
+                  ) : (
+                    <span className="user-menu-fallback">{initial}</span>
+                  )}
+                  <span className="mono">@{handle}</span>
+                  <span className="user-menu-chevron">▾</span>
                 </button>
-              </div>
-            </details>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void signOut()}>Sign out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <button
               className="btn btn-primary"

@@ -21,6 +21,7 @@ export function applyTheme(mode: ThemeMode) {
   if (typeof document === 'undefined') return
   const resolved = resolveTheme(mode)
   document.documentElement.dataset.theme = resolved
+  document.documentElement.classList.toggle('dark', resolved === 'dark')
 }
 
 export function useThemeMode() {
