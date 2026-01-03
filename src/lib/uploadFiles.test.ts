@@ -1,0 +1,91 @@
+/* @vitest-environment node */
+import { gzipSync, strToU8, zipSync } from 'fflate'
+import { describe, expect, it } from 'vitest'
+import { expandFiles } from './uploadFiles'
+
+if (typeof File === 'undefined') {
+  class NodeFile extends Blob {
+    name: string
+    lastModified: number
+
+    constructor(parts: BlobPart[], name: string, options?: FilePropertyBag) {
+      super(parts, options)
+      this.name = name
+      this.lastModified = options?.lastModified ?? Date.now()
+    }
+  }
+  // @ts-expect-error Node test environment polyfill
+  globalThis.File = NodeFile
+}
+
+function buildTar(entries: Array<{ name: string; content: string }>) {
+  const blocks: Uint8Array[] = []
+  for (const entry of entries) {
+    const content = strToU8(entry.content)
+    const header = new Uint8Array(512)
+    writeString(header, entry.name, 0, 100)
+    writeString(header, '0000777', 100, 8)
+    writeString(header, '0000000', 108, 8)
+    writeString(header, '0000000', 116, 8)
+    writeString(header, content.length.toString(8).padStart(11, '0'), 124, 12)
+    writeString(header, '00000000000', 136, 12)
+    header[156] = '0'.charCodeAt(0)
+    writeString(header, 'ustar', 257, 6)
+    for (let i = 148; i < 156; i += 1) {
+      header[i] = 32
+    }
+    let sum = 0
+    for (const byte of header) sum += byte
+    writeString(header, sum.toString(8).padStart(6, '0'), 148, 6)
+    header[154] = 0
+    header[155] = 32
+    blocks.push(header)
+    blocks.push(content)
+    const pad = (512 - (content.length % 512)) % 512
+    if (pad) blocks.push(new Uint8Array(pad))
+  }
+  blocks.push(new Uint8Array(1024))
+  const total = blocks.reduce((sum, block) => sum + block.length, 0)
+  const buffer = new Uint8Array(total)
+  let offset = 0
+  for (const block of blocks) {
+    buffer.set(block, offset)
+    offset += block.length
+  }
+  return buffer
+}
+
+function writeString(target: Uint8Array, value: string, start: number, length: number) {
+  const bytes = strToU8(value)
+  target.set(bytes.subarray(0, length), start)
+}
+
+describe('expandFiles', () => {
+  it('expands zip archives into files', async () => {
+    const zip = zipSync({
+      'SKILL.md': strToU8('hello'),
+      'docs/readme.txt': strToU8('doc'),
+    })
+    const zipFile = new File([zip], 'pack.zip', { type: 'application/zip' })
+    const result = await expandFiles([zipFile])
+    expect(result.map((file) => file.name)).toEqual(['SKILL.md', 'docs/readme.txt'])
+  })
+
+  it('expands gzipped tar archives into files', async () => {
+    const tar = buildTar([
+      { name: 'SKILL.md', content: 'hi' },
+      { name: 'notes.txt', content: 'yo' },
+    ])
+    const tgz = gzipSync(tar)
+    const tgzFile = new File([tgz], 'bundle.tgz', { type: 'application/gzip' })
+    const result = await expandFiles([tgzFile])
+    expect(result.map((file) => file.name)).toEqual(['SKILL.md', 'notes.txt'])
+  })
+
+  it('expands .gz single files', async () => {
+    const gz = gzipSync(strToU8('content'))
+    const gzFile = new File([gz], 'skill.md.gz', { type: 'application/gzip' })
+    const result = await expandFiles([gzFile])
+    expect(result.map((file) => file.name)).toEqual(['skill.md'])
+  })
+})
