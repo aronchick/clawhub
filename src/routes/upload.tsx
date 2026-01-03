@@ -160,8 +160,7 @@ export function Upload() {
       setStatus('Published.')
       void navigate({ to: '/skills/$slug', params: { slug: trimmedSlug } })
     } catch (publishError) {
-      const message =
-        publishError instanceof Error ? publishError.message : 'Publish failed. Please try again.'
+      const message = formatPublishError(publishError)
       setError(message)
       setStatus(null)
       if (validationRef.current && 'scrollIntoView' in validationRef.current) {
@@ -229,10 +228,6 @@ export function Upload() {
           <span className="upload-kicker">Publish</span>
           <h1 className="upload-title">Publish a skill</h1>
           <p className="upload-subtitle">Bundle SKILL.md + text files. Tag it, version it, ship it.</p>
-        </div>
-        <div className="upload-badge">
-          50 MB max
-          <span className="upload-badge-sub">per version</span>
         </div>
       </header>
       <form className="upload-card" onSubmit={handleSubmit}>
@@ -374,7 +369,7 @@ export function Upload() {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : error ? null : (
             <div className="upload-ready">Ready to publish.</div>
           )}
           {error ? <div className="stat upload-error">{error}</div> : null}
@@ -420,4 +415,16 @@ function formatBytes(bytes: number) {
     unit += 1
   }
   return `${size.toFixed(size < 10 && unit > 0 ? 1 : 0)} ${units[unit]}`
+}
+
+function formatPublishError(error: unknown) {
+  if (error instanceof Error) {
+    const cleaned = error.message
+      .replace(/\[CONVEX[^\]]*\]\s*/g, '')
+      .replace(/\[Request ID:[^\]]*\]\s*/g, '')
+      .replace(/^Server Error Called by client\s*/i, '')
+      .trim()
+    if (cleaned && cleaned !== 'Server Error') return cleaned
+  }
+  return 'Publish failed. Please try again.'
 }
