@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAction, useConvexAuth, useMutation } from 'convex/react'
 import semver from 'semver'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -25,6 +25,8 @@ export function Upload() {
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const validationRef = useRef<HTMLDivElement | null>(null)
+  const navigate = useNavigate()
   const maxBytes = 50 * 1024 * 1024
   const totalBytes = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files])
   const hasSkillFile = useMemo(
@@ -106,7 +108,12 @@ export function Upload() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (!validation.ready) return
+    if (!validation.ready) {
+      if (validationRef.current && 'scrollIntoView' in validationRef.current) {
+        validationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
     setError(null)
     if (totalBytes > maxBytes) {
       setError('Total size exceeds 50MB per version.')
@@ -141,26 +148,43 @@ export function Upload() {
     }
 
     setStatus('Publishing version…')
-    await publishVersion({
-      slug,
-      displayName,
-      version,
-      changelog,
-      tags: tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      files: uploaded,
-    })
-    setStatus('Published.')
+    try {
+      await publishVersion({
+        slug: trimmedSlug,
+        displayName: trimmedName,
+        version,
+        changelog: trimmedChangelog,
+        tags: parsedTags,
+        files: uploaded,
+      })
+      setStatus('Published.')
+      void navigate({ to: '/skills/$slug', params: { slug: trimmedSlug } })
+    } catch (publishError) {
+      const message =
+        publishError instanceof Error ? publishError.message : 'Publish failed. Please try again.'
+      setError(message)
+      setStatus(null)
+      if (validationRef.current && 'scrollIntoView' in validationRef.current) {
+        validationRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
   }
 
   async function handleFilesSelected(selected: File[]) {
     if (selected.length === 0) return
     setError(null)
     setStatus('Preparing files…')
-    const expanded = await expandFiles(selected)
-    setStatus(null)
+    let expanded: File[] = []
+    try {
+      expanded = await expandFiles(selected)
+      setStatus(null)
+    } catch (expandError) {
+      const message =
+        expandError instanceof Error ? expandError.message : 'Could not extract files.'
+      setError(message)
+      setStatus(null)
+      return
+    }
     const next = new Map<string, File>()
     for (const file of files) {
       const key = `${file.webkitRelativePath || file.name}:${file.size}`
@@ -338,7 +362,7 @@ export function Upload() {
             </div>
           </div>
         </div>
-        <div className="upload-footer">
+        <div className="upload-footer" ref={validationRef}>
           <button className="btn btn-primary" type="submit" disabled={!validation.ready}>
             Publish
           </button>
@@ -375,7 +399,10 @@ async function uploadFile(uploadUrl: string, file: File) {
 }
 
 async function hashFile(file: File) {
-  const buffer = await file.arrayBuffer()
+  const buffer =
+    typeof file.arrayBuffer === 'function'
+      ? await file.arrayBuffer()
+      : await new Response(file).arrayBuffer()
   const hash = await crypto.subtle.digest('SHA-256', buffer)
   const bytes = new Uint8Array(hash)
   return Array.from(bytes)
