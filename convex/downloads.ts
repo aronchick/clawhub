@@ -49,10 +49,12 @@ export const downloadZip = httpAction(async (ctx, request) => {
   }
 
   const zipData = zipSync(files, { level: 6 })
+  const zipArray = Uint8Array.from(zipData)
+  const zipBlob = new Blob([zipArray], { type: 'application/zip' })
 
   await ctx.runMutation(api.downloads.increment, { skillId: skill._id })
 
-  return new Response(zipData, {
+  return new Response(zipBlob, {
     status: 200,
     headers: {
       'Content-Type': 'application/zip',

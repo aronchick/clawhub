@@ -1,8 +1,8 @@
-import { type Id, v } from 'convex/values'
+import { v } from 'convex/values'
 import semver from 'semver'
-import { api, internal } from './_generated/api'
-import type { Doc } from './_generated/dataModel'
-import { action, internalMutation, mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
+import type { Doc, Id } from './_generated/dataModel'
+import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { assertRole, requireUser, requireUserFromAction } from './lib/access'
 import { generateEmbedding } from './lib/embeddings'
 import {
@@ -16,6 +16,14 @@ import {
 
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024
 const MAX_FILES_FOR_EMBEDDING = 40
+
+type PublishResult = {
+  skillId: Id<'skills'>
+  versionId: Id<'skillVersions'>
+  embeddingId: Id<'skillEmbeddings'>
+}
+
+type ReadmeResult = { path: string; text: string }
 
 export const getBySlug = query({
   args: { slug: v.string() },
@@ -46,10 +54,11 @@ export const list = query({
         .order('desc')
         .take(limit)
     }
-    if (args.ownerUserId) {
+    const ownerUserId = args.ownerUserId
+    if (ownerUserId) {
       return ctx.db
         .query('skills')
-        .withIndex('by_owner', (q) => q.eq('ownerUserId', args.ownerUserId))
+        .withIndex('by_owner', (q) => q.eq('ownerUserId', ownerUserId))
         .order('desc')
         .take(limit)
     }
@@ -74,6 +83,11 @@ export const getVersionById = query({
   handler: async (ctx, args) => ctx.db.get(args.versionId),
 })
 
+export const getVersionByIdInternal = internalQuery({
+  args: { versionId: v.id('skillVersions') },
+  handler: async (ctx, args) => ctx.db.get(args.versionId),
+})
+
 export const getVersionBySkillAndVersion = query({
   args: { skillId: v.id('skills'), version: v.string() },
   handler: async (ctx, args) => {
@@ -86,7 +100,7 @@ export const getVersionBySkillAndVersion = query({
   },
 })
 
-export const publishVersion = action({
+export const publishVersion: ReturnType<typeof action> = action({
   args: {
     slug: v.string(),
     displayName: v.string(),
@@ -103,7 +117,7 @@ export const publishVersion = action({
       }),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<PublishResult> => {
     await requireUserFromAction(ctx)
 
     const version = args.version.trim()
@@ -186,10 +200,10 @@ export const publishVersion = action({
   },
 })
 
-export const getReadme = action({
+export const getReadme: ReturnType<typeof action> = action({
   args: { versionId: v.id('skillVersions') },
-  handler: async (ctx, args) => {
-    const version = (await ctx.runQuery(api.skills.getVersionById, {
+  handler: async (ctx, args): Promise<ReadmeResult> => {
+    const version = (await ctx.runQuery(internal.skills.getVersionByIdInternal, {
       versionId: args.versionId,
     })) as Doc<'skillVersions'> | null
     if (!version) throw new Error('Version not found')

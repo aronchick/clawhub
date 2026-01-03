@@ -1,15 +1,24 @@
-import { type Id, v } from 'convex/values'
-import { api } from './_generated/api'
-import { action, query } from './_generated/server'
+import { v } from 'convex/values'
+import { internal } from './_generated/api'
+import type { Doc, Id } from './_generated/dataModel'
+import { action, internalQuery } from './_generated/server'
 import { generateEmbedding } from './lib/embeddings'
 
-export const searchSkills = action({
+type HydratedEntry = {
+  embeddingId: Id<'skillEmbeddings'>
+  skill: Doc<'skills'> | null
+  version: Doc<'skillVersions'> | null
+}
+
+type SearchResult = HydratedEntry & { score: number }
+
+export const searchSkills: ReturnType<typeof action> = action({
   args: {
     query: v.string(),
     limit: v.optional(v.number()),
     approvedOnly: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<SearchResult[]> => {
     const query = args.query.trim()
     if (!query) return []
     const vector = await generateEmbedding(query)
@@ -22,11 +31,13 @@ export const searchSkills = action({
           : q.or(q.eq('visibility', 'latest'), q.eq('visibility', 'latest-approved')),
     })
 
-    const hydrated = await ctx.runQuery(api.search.hydrateResults, {
+    const hydrated = (await ctx.runQuery(internal.search.hydrateResults, {
       embeddingIds: results.map((result) => result._id),
-    })
+    })) as HydratedEntry[]
 
-    const scoreById = new Map(results.map((result) => [result._id, result._score]))
+    const scoreById = new Map<Id<'skillEmbeddings'>, number>(
+      results.map((result) => [result._id, result._score]),
+    )
 
     return hydrated
       .map((entry) => ({
@@ -37,14 +48,10 @@ export const searchSkills = action({
   },
 })
 
-export const hydrateResults = query({
+export const hydrateResults = internalQuery({
   args: { embeddingIds: v.array(v.id('skillEmbeddings')) },
-  handler: async (ctx, args) => {
-    const entries = [] as Array<{
-      embeddingId: Id<'skillEmbeddings'>
-      skill: unknown
-      version: unknown
-    }>
+  handler: async (ctx, args): Promise<HydratedEntry[]> => {
+    const entries: HydratedEntry[] = []
 
     for (const embeddingId of args.embeddingIds) {
       const embedding = await ctx.db.get(embeddingId)

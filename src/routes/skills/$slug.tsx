@@ -49,7 +49,6 @@ function SkillDetail() {
   const versionById = new Map<Id<'skillVersions'>, Doc<'skillVersions'>>(
     (versions ?? []).map((version) => [version._id, version]),
   )
-  const tagEntries = Object.entries(skill.tags ?? {}) as Array<[string, Id<'skillVersions'>]>
 
   useEffect(() => {
     if (!latestVersion) return
@@ -71,6 +70,8 @@ function SkillDetail() {
       </main>
     )
   }
+
+  const tagEntries = Object.entries(skill.tags ?? {}) as Array<[string, Id<'skillVersions'>]>
 
   return (
     <main className="section">

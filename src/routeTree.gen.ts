@@ -10,17 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as StarsRouteImport } from './routes/stars'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as StarsRouteImport } from './routes/stars'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UHandleRouteImport } from './routes/u/$handle'
 import { Route as SkillsSlugRouteImport } from './routes/skills/$slug'
-import { Route as UserHandleRouteImport } from './routes/u/$handle'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StarsRoute = StarsRouteImport.update({
+  id: '/stars',
+  path: '/stars',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -38,24 +43,19 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StarsRoute = StarsRouteImport.update({
-  id: '/stars',
-  path: '/stars',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UHandleRoute = UHandleRouteImport.update({
+  id: '/u/$handle',
+  path: '/u/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SkillsSlugRoute = SkillsSlugRouteImport.update({
   id: '/skills/$slug',
   path: '/skills/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UserHandleRoute = UserHandleRouteImport.update({
-  id: '/u/$handle',
-  path: '/u/$handle',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -67,7 +67,7 @@ export interface FileRoutesByFullPath {
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/skills/$slug': typeof SkillsSlugRoute
-  '/u/$handle': typeof UserHandleRoute
+  '/u/$handle': typeof UHandleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,7 +77,7 @@ export interface FileRoutesByTo {
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/skills/$slug': typeof SkillsSlugRoute
-  '/u/$handle': typeof UserHandleRoute
+  '/u/$handle': typeof UHandleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,7 +88,7 @@ export interface FileRoutesById {
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
   '/skills/$slug': typeof SkillsSlugRoute
-  '/u/$handle': typeof UserHandleRoute
+  '/u/$handle': typeof UHandleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,7 +131,7 @@ export interface RootRouteChildren {
   StarsRoute: typeof StarsRoute
   UploadRoute: typeof UploadRoute
   SkillsSlugRoute: typeof SkillsSlugRoute
-  UserHandleRoute: typeof UserHandleRoute
+  UHandleRoute: typeof UHandleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stars': {
+      id: '/stars'
+      path: '/stars'
+      fullPath: '/stars'
+      preLoaderRoute: typeof StarsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -164,13 +171,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/stars': {
-      id: '/stars'
-      path: '/stars'
-      fullPath: '/stars'
-      preLoaderRoute: typeof StarsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -178,18 +178,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$handle': {
+      id: '/u/$handle'
+      path: '/u/$handle'
+      fullPath: '/u/$handle'
+      preLoaderRoute: typeof UHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/skills/$slug': {
       id: '/skills/$slug'
       path: '/skills/$slug'
       fullPath: '/skills/$slug'
       preLoaderRoute: typeof SkillsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/u/$handle': {
-      id: '/u/$handle'
-      path: '/u/$handle'
-      fullPath: '/u/$handle'
-      preLoaderRoute: typeof UserHandleRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -203,7 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   StarsRoute: StarsRoute,
   UploadRoute: UploadRoute,
   SkillsSlugRoute: SkillsSlugRoute,
-  UserHandleRoute: UserHandleRoute,
+  UHandleRoute: UHandleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
