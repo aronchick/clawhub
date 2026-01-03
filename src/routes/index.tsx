@@ -1,14 +1,16 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import type { Doc } from '../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home() {
-  const highlighted = useQuery(api.skills.list, { batch: 'highlighted', limit: 6 }) ?? []
-  const latest = useQuery(api.skills.list, { limit: 12 }) ?? []
+  const highlighted =
+    (useQuery(api.skills.list, { batch: 'highlighted', limit: 6 }) as Doc<'skills'>[]) ?? []
+  const latest = (useQuery(api.skills.list, { limit: 12 }) as Doc<'skills'>[]) ?? []
 
   return (
     <main className="app-shell">
