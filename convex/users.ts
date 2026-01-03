@@ -1,7 +1,7 @@
+import { getAuthUserId } from '@convex-dev/auth/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { requireUser, assertRole } from './lib/access'
-import { getAuthUserId } from '@convex-dev/auth/server'
+import { assertRole, requireUser } from './lib/access'
 
 const DEFAULT_ROLE = 'user'
 const ADMIN_HANDLE = 'steipete'
@@ -93,7 +93,10 @@ export const getByHandle = query({
 })
 
 export const setRole = mutation({
-  args: { userId: v.id('users'), role: v.union(v.literal('admin'), v.literal('moderator'), v.literal('user')) },
+  args: {
+    userId: v.id('users'),
+    role: v.union(v.literal('admin'), v.literal('moderator'), v.literal('user')),
+  },
   handler: async (ctx, args) => {
     const { user } = await requireUser(ctx)
     assertRole(user, ['admin'])

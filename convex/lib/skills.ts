@@ -104,9 +104,7 @@ export function parseClawdisMetadata(frontmatter: ParsedSkillFrontmatter) {
       typeof clawdisObj.requires === 'object' && clawdisObj.requires !== null
         ? (clawdisObj.requires as Record<string, unknown>)
         : undefined
-    const installRaw = Array.isArray(clawdisObj.install)
-      ? (clawdisObj.install as unknown[])
-      : []
+    const installRaw = Array.isArray(clawdisObj.install) ? (clawdisObj.install as unknown[]) : []
     const install = installRaw
       .map((entry) => parseInstallSpec(entry))
       .filter((entry): entry is SkillInstallSpec => Boolean(entry))
@@ -117,8 +115,7 @@ export function parseClawdisMetadata(frontmatter: ParsedSkillFrontmatter) {
       emoji: typeof clawdisObj.emoji === 'string' ? clawdisObj.emoji : undefined,
       homepage: typeof clawdisObj.homepage === 'string' ? clawdisObj.homepage : undefined,
       skillKey: typeof clawdisObj.skillKey === 'string' ? clawdisObj.skillKey : undefined,
-      primaryEnv:
-        typeof clawdisObj.primaryEnv === 'string' ? clawdisObj.primaryEnv : undefined,
+      primaryEnv: typeof clawdisObj.primaryEnv === 'string' ? clawdisObj.primaryEnv : undefined,
       os: osRaw.length > 0 ? osRaw : undefined,
       requires: requiresRaw
         ? {
@@ -141,7 +138,7 @@ export function isTextFile(path: string, contentType?: string | null) {
   const trimmed = path.trim().toLowerCase()
   if (!trimmed) return false
   const parts = trimmed.split('.')
-  const extension = parts.length > 1 ? parts.at(-1) ?? '' : ''
+  const extension = parts.length > 1 ? (parts.at(-1) ?? '') : ''
   if (contentType) {
     if (contentType.startsWith('text/')) return true
     if (
@@ -219,7 +216,8 @@ function normalizeStringList(input: unknown): string[] {
 function parseInstallSpec(input: unknown): SkillInstallSpec | undefined {
   if (!input || typeof input !== 'object') return undefined
   const raw = input as Record<string, unknown>
-  const kindRaw = typeof raw.kind === 'string' ? raw.kind : typeof raw.type === 'string' ? raw.type : ''
+  const kindRaw =
+    typeof raw.kind === 'string' ? raw.kind : typeof raw.type === 'string' ? raw.type : ''
   const kind = kindRaw.trim().toLowerCase()
   if (kind !== 'brew' && kind !== 'node' && kind !== 'go' && kind !== 'uv') return undefined
 

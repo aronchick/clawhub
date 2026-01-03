@@ -1,6 +1,6 @@
-import { v, type Id } from 'convex/values'
-import { action, query } from './_generated/server'
+import { type Id, v } from 'convex/values'
 import { api } from './_generated/api'
+import { action, query } from './_generated/server'
 import { generateEmbedding } from './lib/embeddings'
 
 export const searchSkills = action({

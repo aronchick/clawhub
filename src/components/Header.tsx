@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router'
 import { useAuthActions } from '@convex-dev/auth/react'
+import { Link } from '@tanstack/react-router'
 import { useConvexAuth, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { gravatarUrl } from '../lib/gravatar'
@@ -22,9 +22,7 @@ export default function Header() {
           <Link to="/upload">Upload</Link>
           <Link to="/search">Search</Link>
           {me ? <Link to="/stars">Stars</Link> : null}
-          {me?.role === 'admin' || me?.role === 'moderator' ? (
-            <Link to="/admin">Admin</Link>
-          ) : null}
+          {me?.role === 'admin' || me?.role === 'moderator' ? <Link to="/admin">Admin</Link> : null}
         </nav>
         <div className="nav-actions">
           {isAuthenticated && me ? (

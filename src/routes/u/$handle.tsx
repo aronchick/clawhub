@@ -9,10 +9,7 @@ export const Route = createFileRoute('/u/$handle')({
 function UserProfile() {
   const { handle } = Route.useParams()
   const user = useQuery(api.users.getByHandle, { handle })
-  const skills = useQuery(
-    api.stars.listByUser,
-    user ? { userId: user._id, limit: 50 } : 'skip',
-  )
+  const skills = useQuery(api.stars.listByUser, user ? { userId: user._id, limit: 50 } : 'skip')
 
   if (!user) {
     return (

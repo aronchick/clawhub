@@ -1,7 +1,7 @@
-import { httpAction, mutation } from './_generated/server'
-import { api } from './_generated/api'
-import { zipSync } from 'fflate'
 import { v } from 'convex/values'
+import { zipSync } from 'fflate'
+import { api } from './_generated/api'
+import { httpAction, mutation } from './_generated/server'
 
 export const downloadZip = httpAction(async (ctx, request) => {
   const url = new URL(request.url)

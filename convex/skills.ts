@@ -1,7 +1,8 @@
-import { v, type Id } from 'convex/values'
-import { action, internalMutation, mutation, query } from './_generated/server'
+import { type Id, v } from 'convex/values'
+import semver from 'semver'
 import { internal } from './_generated/api'
-import { requireUser, requireUserFromAction, assertRole } from './lib/access'
+import { action, internalMutation, mutation, query } from './_generated/server'
+import { assertRole, requireUser, requireUserFromAction } from './lib/access'
 import { generateEmbedding } from './lib/embeddings'
 import {
   buildEmbeddingText,
@@ -11,7 +12,6 @@ import {
   parseFrontmatter,
   sanitizePath,
 } from './lib/skills'
-import semver from 'semver'
 
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024
 const MAX_FILES_FOR_EMBEDDING = 40
@@ -24,9 +24,7 @@ export const getBySlug = query({
       .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique()
     if (!skill) return null
-    const latestVersion = skill.latestVersionId
-      ? await ctx.db.get(skill.latestVersionId)
-      : null
+    const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null
     const owner = await ctx.db.get(skill.ownerUserId)
     return { skill, latestVersion, owner }
   },
@@ -80,7 +78,9 @@ export const getVersionBySkillAndVersion = query({
   handler: async (ctx, args) => {
     return ctx.db
       .query('skillVersions')
-      .withIndex('by_skill_version', (q) => q.eq('skillId', args.skillId).eq('version', args.version))
+      .withIndex('by_skill_version', (q) =>
+        q.eq('skillId', args.skillId).eq('version', args.version),
+      )
       .unique()
   },
 })
@@ -127,9 +127,7 @@ export const publishVersion = action({
       throw new Error('Invalid file paths')
     }
     if (
-      sanitizedFiles.some(
-        (file) => !isTextFile(file.path ?? '', file.contentType ?? undefined),
-      )
+      sanitizedFiles.some((file) => !isTextFile(file.path ?? '', file.contentType ?? undefined))
     ) {
       throw new Error('Only text-based files are allowed')
     }
@@ -254,9 +252,7 @@ export const setRedactionApproved = mutation({
     const skill = await ctx.db.get(args.skillId)
     if (!skill) throw new Error('Skill not found')
 
-    const badge = args.approved
-      ? { byUserId: user._id, at: Date.now() }
-      : undefined
+    const badge = args.approved ? { byUserId: user._id, at: Date.now() } : undefined
 
     await ctx.db.patch(skill._id, {
       badges: { ...skill.badges, redactionApproved: badge },
@@ -332,7 +328,7 @@ export const insertVersion = internalMutation({
     embedding: v.array(v.number()),
   },
   handler: async (ctx, args) => {
-    const { userId, user } = await requireUser(ctx)
+    const { userId } = await requireUser(ctx)
 
     let skill = await ctx.db
       .query('skills')
@@ -365,9 +361,7 @@ export const insertVersion = internalMutation({
 
     const existingVersion = await ctx.db
       .query('skillVersions')
-      .withIndex('by_skill_version', (q) =>
-        q.eq('skillId', skill._id).eq('version', args.version),
-      )
+      .withIndex('by_skill_version', (q) => q.eq('skillId', skill._id).eq('version', args.version))
       .unique()
     if (existingVersion) {
       throw new Error('Version already exists')

@@ -36,9 +36,12 @@ function Admin() {
               <span className="mono">@{user.handle ?? user.name ?? 'user'}</span>
               <select
                 value={user.role ?? 'user'}
-                onChange={(event) =>
-                  void setRole({ userId: user._id, role: event.target.value as any })
-                }
+                onChange={(event) => {
+                  const value = event.target.value
+                  if (value === 'admin' || value === 'moderator' || value === 'user') {
+                    void setRole({ userId: user._id, role: value })
+                  }
+                }}
               >
                 <option value="user">User</option>
                 <option value="moderator">Moderator</option>

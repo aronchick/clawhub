@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 
@@ -58,7 +58,12 @@ function Home() {
             <div className="card">No highlighted skills yet.</div>
           ) : (
             highlighted.map((skill) => (
-              <Link key={skill._id} to="/skills/$slug" params={{ slug: skill.slug }} className="card">
+              <Link
+                key={skill._id}
+                to="/skills/$slug"
+                params={{ slug: skill.slug }}
+                className="card"
+              >
                 <div className="tag">Highlighted</div>
                 <h3 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
                   {skill.displayName}
@@ -66,7 +71,9 @@ function Home() {
                 <p className="section-subtitle" style={{ margin: 0 }}>
                   {skill.summary ?? 'A fresh skill bundle.'}
                 </p>
-                <div className="stat">⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads}</div>
+                <div className="stat">
+                  ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads}
+                </div>
               </Link>
             ))
           )}
@@ -81,7 +88,12 @@ function Home() {
             <div className="card">No skills yet. Be the first.</div>
           ) : (
             latest.map((skill) => (
-              <Link key={skill._id} to="/skills/$slug" params={{ slug: skill.slug }} className="card">
+              <Link
+                key={skill._id}
+                to="/skills/$slug"
+                params={{ slug: skill.slug }}
+                className="card"
+              >
                 <div className="stat">{skill.summary ?? 'Agent-ready skill pack.'}</div>
                 <h3 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
                   {skill.displayName}
