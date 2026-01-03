@@ -1,0 +1,139 @@
+import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
+import { authTables } from '@convex-dev/auth/server'
+import { EMBEDDING_DIMENSIONS } from './lib/embeddings'
+
+const users = defineTable({
+  name: v.optional(v.string()),
+  image: v.optional(v.string()),
+  email: v.optional(v.string()),
+  emailVerificationTime: v.optional(v.number()),
+  phone: v.optional(v.string()),
+  phoneVerificationTime: v.optional(v.number()),
+  isAnonymous: v.optional(v.boolean()),
+  handle: v.optional(v.string()),
+  displayName: v.optional(v.string()),
+  bio: v.optional(v.string()),
+  role: v.optional(v.union(v.literal('admin'), v.literal('moderator'), v.literal('user'))),
+  deletedAt: v.optional(v.number()),
+  createdAt: v.optional(v.number()),
+  updatedAt: v.optional(v.number()),
+})
+  .index('email', ['email'])
+  .index('phone', ['phone'])
+  .index('handle', ['handle'])
+
+const skills = defineTable({
+  slug: v.string(),
+  displayName: v.string(),
+  summary: v.optional(v.string()),
+  ownerUserId: v.id('users'),
+  latestVersionId: v.optional(v.id('skillVersions')),
+  tags: v.record(v.string(), v.id('skillVersions')),
+  badges: v.object({
+    redactionApproved: v.optional(
+      v.object({
+        byUserId: v.id('users'),
+        at: v.number(),
+      }),
+    ),
+  }),
+  batch: v.optional(v.string()),
+  stats: v.object({
+    downloads: v.number(),
+    stars: v.number(),
+    versions: v.number(),
+    comments: v.number(),
+  }),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
+  .index('by_slug', ['slug'])
+  .index('by_owner', ['ownerUserId'])
+  .index('by_updated', ['updatedAt'])
+  .index('by_batch', ['batch'])
+
+const skillVersions = defineTable({
+  skillId: v.id('skills'),
+  version: v.string(),
+  changelog: v.string(),
+  files: v.array(
+    v.object({
+      path: v.string(),
+      size: v.number(),
+      storageId: v.id('_storage'),
+      sha256: v.string(),
+      contentType: v.optional(v.string()),
+    }),
+  ),
+  parsed: v.object({
+    frontmatter: v.record(v.string(), v.string()),
+    metadata: v.optional(v.any()),
+    clawdis: v.optional(v.any()),
+  }),
+  createdBy: v.id('users'),
+  createdAt: v.number(),
+  softDeletedAt: v.optional(v.number()),
+})
+  .index('by_skill', ['skillId'])
+  .index('by_skill_version', ['skillId', 'version'])
+
+const skillEmbeddings = defineTable({
+  skillId: v.id('skills'),
+  versionId: v.id('skillVersions'),
+  ownerId: v.id('users'),
+  embedding: v.array(v.number()),
+  isLatest: v.boolean(),
+  isApproved: v.boolean(),
+  visibility: v.string(),
+  updatedAt: v.number(),
+})
+  .index('by_skill', ['skillId'])
+  .index('by_version', ['versionId'])
+  .vectorIndex('by_embedding', {
+    vectorField: 'embedding',
+    dimensions: EMBEDDING_DIMENSIONS,
+    filterFields: ['visibility'],
+  })
+
+const comments = defineTable({
+  skillId: v.id('skills'),
+  userId: v.id('users'),
+  body: v.string(),
+  createdAt: v.number(),
+  softDeletedAt: v.optional(v.number()),
+  deletedBy: v.optional(v.id('users')),
+})
+  .index('by_skill', ['skillId'])
+  .index('by_user', ['userId'])
+
+const stars = defineTable({
+  skillId: v.id('skills'),
+  userId: v.id('users'),
+  createdAt: v.number(),
+})
+  .index('by_skill', ['skillId'])
+  .index('by_user', ['userId'])
+  .index('by_skill_user', ['skillId', 'userId'])
+
+const auditLogs = defineTable({
+  actorUserId: v.id('users'),
+  action: v.string(),
+  targetType: v.string(),
+  targetId: v.string(),
+  metadata: v.optional(v.any()),
+  createdAt: v.number(),
+})
+  .index('by_actor', ['actorUserId'])
+  .index('by_target', ['targetType', 'targetId'])
+
+export default defineSchema({
+  ...authTables,
+  users,
+  skills,
+  skillVersions,
+  skillEmbeddings,
+  comments,
+  stars,
+  auditLogs,
+})
