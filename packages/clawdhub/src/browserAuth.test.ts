@@ -13,10 +13,12 @@ describe('browserAuth', () => {
       siteUrl: 'https://example.com',
       redirectUri: 'http://127.0.0.1:1234/callback',
       label: 'CLI token',
+      state: 'state123',
     })
     expect(url).toContain('https://example.com/cli/auth?')
     expect(url).toContain('redirect_uri=')
     expect(url).toContain('label_b64=')
+    expect(url).toContain('state=')
   })
 
   it('accepts only loopback http redirect uris', () => {
@@ -29,7 +31,11 @@ describe('browserAuth', () => {
 
   it('receives token via loopback server', async () => {
     const server = await startLoopbackAuthServer({ timeoutMs: 2000 })
-    const payload = { token: 'clh_test', registry: 'https://example.convex.site' }
+    const payload = {
+      token: 'clh_test',
+      registry: 'https://example.convex.site',
+      state: server.state,
+    }
     await fetch(server.redirectUri.replace('/callback', '/token'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

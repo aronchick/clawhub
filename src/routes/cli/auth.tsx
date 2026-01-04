@@ -14,13 +14,19 @@ function CliAuth() {
   const me = useQuery(api.users.me)
   const createToken = useMutation(api.tokens.create)
 
-  const search = Route.useSearch() as { redirect_uri?: string; label?: string; label_b64?: string }
+  const search = Route.useSearch() as {
+    redirect_uri?: string
+    label?: string
+    label_b64?: string
+    state?: string
+  }
   const [status, setStatus] = useState<string>('Preparing…')
   const [token, setToken] = useState<string | null>(null)
   const hasRun = useRef(false)
 
   const redirectUri = search.redirect_uri ?? ''
   const label = (decodeLabel(search.label_b64) ?? search.label ?? 'CLI token').trim() || 'CLI token'
+  const state = typeof search.state === 'string' ? search.state.trim() : ''
 
   const safeRedirect = useMemo(() => isAllowedRedirectUri(redirectUri), [redirectUri])
   const registry = import.meta.env.VITE_CONVEX_SITE_URL as string | undefined
@@ -28,6 +34,7 @@ function CliAuth() {
   useEffect(() => {
     if (hasRun.current) return
     if (!safeRedirect) return
+    if (!state) return
     if (!registry) return
     if (!isAuthenticated || !me) return
     hasRun.current = true
@@ -40,6 +47,7 @@ function CliAuth() {
       const hash = new URLSearchParams()
       hash.set('token', result.token)
       hash.set('registry', registry)
+      hash.set('state', state)
       window.location.assign(`${redirectUri}#${hash.toString()}`)
     }
 
@@ -48,7 +56,7 @@ function CliAuth() {
       setStatus(message)
       setToken(null)
     })
-  }, [createToken, isAuthenticated, label, me, redirectUri, safeRedirect])
+  }, [createToken, isAuthenticated, label, me, redirectUri, safeRedirect, state])
 
   if (!safeRedirect) {
     return (
@@ -58,6 +66,22 @@ function CliAuth() {
             CLI login
           </h1>
           <p className="section-subtitle">Invalid redirect URL.</p>
+          <p className="section-subtitle" style={{ marginBottom: 0 }}>
+            Run the CLI again to start a fresh login.
+          </p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!state) {
+    return (
+      <main className="section">
+        <div className="card">
+          <h1 className="section-title" style={{ marginTop: 0 }}>
+            CLI login
+          </h1>
+          <p className="section-subtitle">Missing state.</p>
           <p className="section-subtitle" style={{ marginBottom: 0 }}>
             Run the CLI again to start a fresh login.
           </p>

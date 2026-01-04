@@ -1,5 +1,5 @@
 - [x] ~~Move `src/routes/upload.test.tsx` out of `src/routes/` (fix TanStack Start build warning)~~
-- [ ] Add `state` nonce to browser auth (`clawdhub auth login`) and validate on loopback receiver
+- [x] ~~Add `state` nonce to browser auth (`clawdhub auth login`) and validate on loopback receiver~~
 - [ ] Well-known v1: `/.well-known/clawdhub.json` => `{ apiBase, authBase?, minCliVersion? }` (keep backward compat)
 - [ ] Centralize registry resolution (single `getRegistry()`), cache discovery in global config
 - [ ] Split `packages/clawdhub/src/cli.ts` into modules (<500 LOC per file)

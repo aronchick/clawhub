@@ -208,6 +208,7 @@ async function cmdLoginFlow(
     siteUrl: authBase,
     redirectUri: receiver.redirectUri,
     label,
+    state: receiver.state,
   })
 
   console.log(`Opening browser: ${authUrl}`)
