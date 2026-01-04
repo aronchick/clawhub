@@ -27,7 +27,9 @@ export default function Header() {
     <header className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="brand">
-          <span className="brand-mark" />
+          <span className="brand-mark">
+            <img src="/clawd-logo.png" alt="" aria-hidden="true" />
+          </span>
           ClawdHub
         </Link>
         <nav className="nav-links">
