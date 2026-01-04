@@ -4,8 +4,13 @@ export const GlobalConfigSchema = type({
     token: 'string',
 });
 export const WellKnownConfigSchema = type({
+    apiBase: 'string',
+    authBase: 'string?',
+    minCliVersion: 'string?',
+}).or({
     registry: 'string',
     authBase: 'string?',
+    minCliVersion: 'string?',
 });
 export const LockfileSchema = type({
     version: '1',

@@ -5,8 +5,13 @@ export declare const GlobalConfigSchema: import("arktype/internal/variants/objec
 }, {}>;
 export type GlobalConfig = (typeof GlobalConfigSchema)[inferred];
 export declare const WellKnownConfigSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    apiBase: string;
+    authBase?: string | undefined;
+    minCliVersion?: string | undefined;
+} | {
     registry: string;
     authBase?: string | undefined;
+    minCliVersion?: string | undefined;
 }, {}>;
 export type WellKnownConfig = (typeof WellKnownConfigSchema)[inferred];
 export declare const LockfileSchema: import("arktype/internal/variants/object.ts").ObjectType<{
