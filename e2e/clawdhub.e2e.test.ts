@@ -1,7 +1,7 @@
 /* @vitest-environment node */
 
 import { spawnSync } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -116,6 +116,50 @@ describe('clawdhub e2e', () => {
       expect(result.status).toBe(0)
       expect(result.stderr).not.toMatch(/not logged in|unauthorized|error:/i)
     } finally {
+      await rm(cfg.dir, { recursive: true, force: true })
+    }
+  })
+
+  it('sync dry-run finds skills from an explicit root', async () => {
+    const registry = process.env.CLAWDHUB_REGISTRY?.trim() || 'https://clawdhub.com'
+    const site = process.env.CLAWDHUB_SITE?.trim() || 'https://clawdhub.com'
+    const token = mustGetToken() ?? (await readGlobalConfig())?.token ?? null
+    if (!token) {
+      throw new Error('Missing token. Set CLAWDHUB_E2E_TOKEN or run: bun clawdhub auth login')
+    }
+
+    const cfg = await makeTempConfig(registry, token)
+    const root = await mkdtemp(join(tmpdir(), 'clawdhub-e2e-sync-'))
+    try {
+      const skillDir = join(root, 'cool-skill')
+      await mkdir(skillDir, { recursive: true })
+      await writeFile(join(skillDir, 'SKILL.md'), '# Skill\n', 'utf8')
+
+      const result = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'sync',
+          '--dry-run',
+          '--all',
+          '--root',
+          root,
+          '--site',
+          site,
+          '--registry',
+          registry,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(result.status).toBe(0)
+      expect(result.stderr).not.toMatch(/error:/i)
+      expect(result.stdout).toMatch(/Dry run/i)
+    } finally {
+      await rm(root, { recursive: true, force: true })
       await rm(cfg.dir, { recursive: true, force: true })
     }
   })

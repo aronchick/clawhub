@@ -5,6 +5,7 @@ import { getCliBuildLabel, getCliVersion } from './cli/buildInfo.js'
 import { cmdLoginFlow, cmdLogout, cmdWhoami } from './cli/commands/auth.js'
 import { cmdPublish } from './cli/commands/publish.js'
 import { cmdInstall, cmdList, cmdSearch, cmdUpdate } from './cli/commands/skills.js'
+import { cmdSync } from './cli/commands/sync.js'
 import { configureCommanderHelp, styleEnvBlock, styleTitle } from './cli/helpStyle.js'
 import { DEFAULT_REGISTRY, DEFAULT_SITE } from './cli/registry.js'
 import type { GlobalOpts } from './cli/types.js'
@@ -157,6 +158,33 @@ program
   .action(async (folder, options) => {
     const opts = resolveGlobalOpts()
     await cmdPublish(opts, folder, options)
+  })
+
+program
+  .command('sync')
+  .description('Scan local skills and publish new/updated ones')
+  .option('--root <dir...>', 'Extra scan roots (one or more)')
+  .option('--all', 'Upload all new/updated skills without prompting')
+  .option('--dry-run', 'Show what would be uploaded')
+  .option('--bump <type>', 'Version bump for updates (patch|minor|major)', 'patch')
+  .option('--changelog <text>', 'Changelog to use for updates (non-interactive)')
+  .option('--tags <tags>', 'Comma-separated tags', 'latest')
+  .action(async (options) => {
+    const opts = resolveGlobalOpts()
+    const bump = String(options.bump ?? 'patch') as 'patch' | 'minor' | 'major'
+    if (!['patch', 'minor', 'major'].includes(bump)) fail('--bump must be patch|minor|major')
+    await cmdSync(
+      opts,
+      {
+        root: options.root,
+        all: options.all,
+        dryRun: options.dryRun,
+        bump,
+        changelog: options.changelog,
+        tags: options.tags,
+      },
+      isInputAllowed(),
+    )
   })
 
 void program.parseAsync(process.argv).catch((error) => {

@@ -14,6 +14,7 @@ import { readGlobalConfig } from '../../config.js'
 import { apiRequest } from '../../http.js'
 import { listTextFiles, sha256Hex } from '../../skills.js'
 import { getRegistry } from '../registry.js'
+import { sanitizeSlug, titleCase } from '../slug.js'
 import type { GlobalOpts } from '../types.js'
 import { createSpinner, fail, formatError } from '../ui.js'
 
@@ -130,21 +131,4 @@ async function uploadFile(uploadUrl: string, bytes: Uint8Array, contentType: str
     'Upload response',
   )
   return payload.storageId
-}
-
-function sanitizeSlug(value: string) {
-  const raw = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-  const cleaned = raw.replace(/^-+/, '').replace(/-+$/, '').replace(/--+/g, '-')
-  return cleaned
-}
-
-function titleCase(value: string) {
-  return value
-    .trim()
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
