@@ -45,8 +45,7 @@ function Home() {
               </Link>
             </div>
             <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
-              <div className="stat">Vector search · Latest tags · 50MB per version</div>
-              <div className="stat">Redaction badges · Soft delete · Rollback ready</div>
+              <div className="stat">Search skills. Versioned, rollback-ready, redaction-checked.</div>
             </div>
           </div>
         </div>
