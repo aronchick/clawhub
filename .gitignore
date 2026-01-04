@@ -2,6 +2,8 @@ node_modules
 .DS_Store
 dist
 dist-ssr
+!packages/schema/dist
+!packages/schema/dist/**
 *.local
 .vercel
 count.txt
