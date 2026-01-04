@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
 import { homedir } from 'node:os'
+import { dirname, join } from 'node:path'
 
 type GlobalConfig = { registry: string; token: string }
 
@@ -36,4 +36,3 @@ export async function writeGlobalConfig(config: GlobalConfig) {
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
 }
-

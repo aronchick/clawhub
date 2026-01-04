@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { unzipSync } from 'fflate'
 import type { Lockfile } from './types.js'
@@ -91,7 +91,10 @@ export async function writeLockfile(workdir: string, lock: Lockfile) {
 }
 
 function normalizePath(path: string) {
-  return path.split(sep).join('/').replace(/^\.\/+/, '')
+  return path
+    .split(sep)
+    .join('/')
+    .replace(/^\.\/+/, '')
 }
 
 function sanitizeRelPath(path: string) {
@@ -115,4 +118,3 @@ async function walk(dir: string, onFile: (path: string) => Promise<void>) {
     await onFile(full)
   }
 }
-

@@ -28,4 +28,3 @@ export async function downloadZip(registry: string, args: { slug: string; versio
   const buffer = new Uint8Array(await response.arrayBuffer())
   return buffer
 }
-

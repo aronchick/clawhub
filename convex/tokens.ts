@@ -86,4 +86,3 @@ export const getUserForTokenInternal = internalQuery({
     return ctx.db.get(token.userId)
   },
 })
-

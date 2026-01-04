@@ -160,7 +160,8 @@ function parsePublishBody(body: unknown) {
     const size = numberField(file, 'size')
     const storageId = stringField(file, 'storageId') as Id<'_storage'>
     const sha256 = stringField(file, 'sha256')
-    const contentType = typeof file.contentType === 'string' ? (file.contentType as string) : undefined
+    const contentType =
+      typeof file.contentType === 'string' ? (file.contentType as string) : undefined
     return { path, size, storageId, sha256, contentType }
   })
 
@@ -178,4 +179,3 @@ function numberField(obj: Record<string, unknown>, key: string) {
   if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${key} must be number`)
   return value
 }
-

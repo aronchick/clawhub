@@ -6,7 +6,10 @@ import { hashToken } from './tokens'
 
 type TokenAuthResult = { user: Doc<'users'>; userId: Doc<'users'>['_id'] }
 
-export async function requireApiTokenUser(ctx: ActionCtx, request: Request): Promise<TokenAuthResult> {
+export async function requireApiTokenUser(
+  ctx: ActionCtx,
+  request: Request,
+): Promise<TokenAuthResult> {
   const header = request.headers.get('authorization') ?? request.headers.get('Authorization')
   const token = parseBearerToken(header)
   if (!token) throw new ConvexError('Unauthorized')
@@ -15,7 +18,9 @@ export async function requireApiTokenUser(ctx: ActionCtx, request: Request): Pro
   const apiToken = await ctx.runQuery(internal.tokens.getByHashInternal, { tokenHash })
   if (!apiToken || apiToken.revokedAt) throw new ConvexError('Unauthorized')
 
-  const user = await ctx.runQuery(internal.tokens.getUserForTokenInternal, { tokenId: apiToken._id })
+  const user = await ctx.runQuery(internal.tokens.getUserForTokenInternal, {
+    tokenId: apiToken._id,
+  })
   if (!user || user.deletedAt) throw new ConvexError('Unauthorized')
 
   await ctx.runMutation(internal.tokens.touchInternal, { tokenId: apiToken._id })
@@ -29,4 +34,3 @@ function parseBearerToken(header: string | null) {
   const token = trimmed.slice(7).trim()
   return token || null
 }
-
