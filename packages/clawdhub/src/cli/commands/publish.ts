@@ -1,5 +1,8 @@
 import { stat } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
+import semver from 'semver'
+import { readGlobalConfig } from '../../config.js'
+import { apiRequest } from '../../http.js'
 import {
   ApiCliPublishResponseSchema,
   ApiCliUploadUrlResponseSchema,
@@ -7,10 +10,7 @@ import {
   ApiUploadFileResponseSchema,
   CliPublishRequestSchema,
   parseArk,
-} from 'clawdhub-schema'
-import semver from 'semver'
-import { readGlobalConfig } from '../../config.js'
-import { apiRequest } from '../../http.js'
+} from '../../schema/index.js'
 import { listTextFiles, sha256Hex } from '../../skills.js'
 import { getRegistry } from '../registry.js'
 import { sanitizeSlug, titleCase } from '../slug.js'

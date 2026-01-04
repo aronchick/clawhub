@@ -191,10 +191,14 @@ program
   .option('--bump <type>', 'Version bump for updates (patch|minor|major)', 'patch')
   .option('--changelog <text>', 'Changelog to use for updates (non-interactive)')
   .option('--tags <tags>', 'Comma-separated tags', 'latest')
+  .option('--concurrency <n>', 'Concurrent registry checks (default: 8)', '8')
   .action(async (options) => {
     const opts = resolveGlobalOpts()
     const bump = String(options.bump ?? 'patch') as 'patch' | 'minor' | 'major'
     if (!['patch', 'minor', 'major'].includes(bump)) fail('--bump must be patch|minor|major')
+    const concurrencyRaw = Number(options.concurrency ?? 8)
+    const concurrency = Number.isFinite(concurrencyRaw) ? Math.round(concurrencyRaw) : 8
+    if (concurrency < 1 || concurrency > 32) fail('--concurrency must be between 1 and 32')
     await cmdSync(
       opts,
       {
@@ -204,6 +208,7 @@ program
         bump,
         changelog: options.changelog,
         tags: options.tags,
+        concurrency,
       },
       isInputAllowed(),
     )

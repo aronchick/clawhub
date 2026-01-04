@@ -2,15 +2,15 @@ import { realpath } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { intro, isCancel, multiselect, note, outro, text } from '@clack/prompts'
+import semver from 'semver'
+import { readGlobalConfig } from '../../config.js'
+import { apiRequest, downloadZip } from '../../http.js'
 import {
   ApiCliWhoamiResponseSchema,
   ApiRoutes,
   ApiSkillMetaResponseSchema,
   ApiSkillResolveResponseSchema,
-} from 'clawdhub-schema'
-import semver from 'semver'
-import { readGlobalConfig } from '../../config.js'
-import { apiRequest, downloadZip } from '../../http.js'
+} from '../../schema/index.js'
 import { hashSkillFiles, hashSkillZip, listTextFiles } from '../../skills.js'
 import { getRegistry } from '../registry.js'
 import { findSkillFolders, getFallbackSkillRoots, type SkillFolder } from '../scanSkills.js'
@@ -25,6 +25,7 @@ type SyncOptions = {
   bump?: 'patch' | 'minor' | 'major'
   changelog?: string
   tags?: string
+  concurrency?: number
 }
 
 type Candidate = SkillFolder & {
@@ -50,6 +51,7 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
 
   const registry = await getRegistryWithAuth(opts, token)
   const selectedRoots = buildScanRoots(opts, options.root)
+  const concurrency = normalizeConcurrency(options.concurrency)
 
   const spinner = createSpinner('Scanning for local skills')
   let scan = await scanRoots(selectedRoots)
@@ -60,8 +62,8 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
     if (scan.skills.length === 0)
       fail('No skills found (checked workdir and known Clawdis/Clawd locations)')
     note(
-      `No skills in workdir. Found ${scan.skills.length} in legacy locations.`,
-      formatList(scan.rootsWithSkills, 10),
+      `No skills in workdir. Found ${scan.skills.length} in fallback locations.`,
+      wrapNoteBody(formatList(scan.rootsWithSkills, 10)),
     )
   } else {
     spinner.stop()
@@ -69,23 +71,24 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
   const deduped = dedupeSkillsBySlug(scan.skills)
   const skills = deduped.skills
   if (deduped.duplicates.length > 0) {
-    note('Skipped duplicate slugs', formatCommaList(deduped.duplicates, 16))
+    note('Skipped duplicate slugs', wrapNoteBody(formatCommaList(deduped.duplicates, 16)))
   }
   const parsingSpinner = createSpinner('Parsing local skills')
   const locals: LocalSkill[] = []
   try {
-    let index = 0
-    for (const skill of skills) {
-      index += 1
-      parsingSpinner.text = `Parsing local skills ${index}/${skills.length}`
+    let done = 0
+    const parsed = await mapWithConcurrency(skills, Math.min(concurrency, 12), async (skill) => {
       const filesOnDisk = await listTextFiles(skill.folder)
       const hashed = hashSkillFiles(filesOnDisk)
-      locals.push({
+      done += 1
+      parsingSpinner.text = `Parsing local skills ${done}/${skills.length}`
+      return {
         ...skill,
         fingerprint: hashed.fingerprint,
         fileCount: filesOnDisk.length,
-      })
-    }
+      }
+    })
+    locals.push(...parsed)
   } catch (error) {
     parsingSpinner.fail(formatError(error))
     throw error
@@ -95,68 +98,18 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
 
   const candidatesSpinner = createSpinner('Checking registry sync state')
   const candidates: Candidate[] = []
-  let supportsResolve: boolean | null = null
+  const resolveSupport: { value: boolean | null } = { value: null }
   try {
-    let index = 0
-    for (const skill of locals) {
-      index += 1
-      candidatesSpinner.text = `Checking registry sync state ${index}/${locals.length}`
-
-      const meta = await apiRequest(
-        registry,
-        { method: 'GET', path: `${ApiRoutes.skill}?slug=${encodeURIComponent(skill.slug)}` },
-        ApiSkillMetaResponseSchema,
-      ).catch(() => null)
-
-      const latestVersion = meta?.latestVersion?.version ?? null
-      if (!latestVersion) {
-        candidates.push({
-          ...skill,
-          status: 'new',
-          matchVersion: null,
-          latestVersion: null,
-        })
-        continue
+    let done = 0
+    const resolved = await mapWithConcurrency(locals, Math.min(concurrency, 16), async (skill) => {
+      try {
+        return await checkRegistrySyncState(registry, skill, resolveSupport)
+      } finally {
+        done += 1
+        candidatesSpinner.text = `Checking registry sync state ${done}/${locals.length}`
       }
-
-      let matchVersion: string | null = null
-      if (supportsResolve !== false) {
-        try {
-          const resolved = await apiRequest(
-            registry,
-            {
-              method: 'GET',
-              path: `${ApiRoutes.skillResolve}?slug=${encodeURIComponent(skill.slug)}&hash=${encodeURIComponent(skill.fingerprint)}`,
-            },
-            ApiSkillResolveResponseSchema,
-          )
-          supportsResolve = true
-          matchVersion = resolved.match?.version ?? null
-        } catch (error) {
-          const message = formatError(error)
-          if (/skill not found/i.test(message)) {
-            matchVersion = null
-          } else if (/no matching routes found/i.test(message) || /not found/i.test(message)) {
-            supportsResolve = false
-          } else {
-            throw error
-          }
-        }
-      }
-
-      if (supportsResolve === false) {
-        const zip = await downloadZip(registry, { slug: skill.slug, version: latestVersion })
-        const remote = hashSkillZip(zip).fingerprint
-        matchVersion = remote === skill.fingerprint ? latestVersion : null
-      }
-
-      candidates.push({
-        ...skill,
-        status: matchVersion ? 'synced' : 'update',
-        matchVersion,
-        latestVersion,
-      })
-    }
+    })
+    candidates.push(...resolved)
   } catch (error) {
     candidatesSpinner.fail(formatError(error))
     throw error
@@ -170,7 +123,7 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
 
   if (actionable.length === 0) {
     if (synced.length > 0) {
-      note('Already synced', formatCommaList(synced.map(formatSyncedSummary), 16))
+      note('Already synced', wrapNoteBody(formatCommaList(synced.map(formatSyncedSummary), 16)))
     }
     outro('Nothing to sync.')
     return
@@ -178,13 +131,15 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
 
   note(
     'To sync',
-    formatBulletList(
-      actionable.map((candidate) => formatActionableLine(candidate, bump)),
-      20,
+    wrapNoteBody(
+      formatBulletList(
+        actionable.map((candidate) => formatActionableLine(candidate, bump)),
+        20,
+      ),
     ),
   )
   if (synced.length > 0) {
-    note('Already synced', formatSyncedDisplay(synced))
+    note('Already synced', wrapNoteBody(formatSyncedDisplay(synced)))
   }
 
   const selected = await selectToUpload(actionable, {
@@ -225,6 +180,109 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
 function buildScanRoots(opts: GlobalOpts, extraRoots: string[] | undefined) {
   const roots = [opts.workdir, opts.dir, ...(extraRoots ?? [])]
   return Array.from(new Set(roots.map((root) => resolve(root))))
+}
+
+function normalizeConcurrency(value: number | undefined) {
+  const raw = typeof value === 'number' ? value : 8
+  const rounded = Number.isFinite(raw) ? Math.round(raw) : 8
+  return Math.min(32, Math.max(1, rounded))
+}
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>) {
+  const results = Array.from({ length: items.length }) as R[]
+  let nextIndex = 0
+  const workerCount = Math.min(Math.max(1, limit), items.length || 1)
+
+  async function worker() {
+    while (true) {
+      const index = nextIndex
+      nextIndex += 1
+      if (index >= items.length) return
+      results[index] = await fn(items[index] as T)
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()))
+  return results
+}
+
+async function checkRegistrySyncState(
+  registry: string,
+  skill: LocalSkill,
+  resolveSupport: { value: boolean | null },
+): Promise<Candidate> {
+  if (resolveSupport.value !== false) {
+    try {
+      const resolved = await apiRequest(
+        registry,
+        {
+          method: 'GET',
+          path: `${ApiRoutes.skillResolve}?slug=${encodeURIComponent(skill.slug)}&hash=${encodeURIComponent(skill.fingerprint)}`,
+        },
+        ApiSkillResolveResponseSchema,
+      )
+      resolveSupport.value = true
+      const latestVersion = resolved.latestVersion?.version ?? null
+      const matchVersion = resolved.match?.version ?? null
+      if (!latestVersion) {
+        return {
+          ...skill,
+          status: 'new',
+          matchVersion: null,
+          latestVersion: null,
+        }
+      }
+      return {
+        ...skill,
+        status: matchVersion ? 'synced' : 'update',
+        matchVersion,
+        latestVersion,
+      }
+    } catch (error) {
+      const message = formatError(error)
+      if (/skill not found/i.test(message) || /HTTP 404/i.test(message)) {
+        resolveSupport.value = true
+        return {
+          ...skill,
+          status: 'new',
+          matchVersion: null,
+          latestVersion: null,
+        }
+      }
+      if (/no matching routes found/i.test(message)) {
+        resolveSupport.value = false
+      } else {
+        throw error
+      }
+    }
+  }
+
+  const meta = await apiRequest(
+    registry,
+    { method: 'GET', path: `${ApiRoutes.skill}?slug=${encodeURIComponent(skill.slug)}` },
+    ApiSkillMetaResponseSchema,
+  ).catch(() => null)
+
+  const latestVersion = meta?.latestVersion?.version ?? null
+  if (!latestVersion) {
+    return {
+      ...skill,
+      status: 'new',
+      matchVersion: null,
+      latestVersion: null,
+    }
+  }
+
+  const zip = await downloadZip(registry, { slug: skill.slug, version: latestVersion })
+  const remote = hashSkillZip(zip).fingerprint
+  const matchVersion = remote === skill.fingerprint ? latestVersion : null
+
+  return {
+    ...skill,
+    status: matchVersion ? 'synced' : 'update',
+    matchVersion,
+    latestVersion,
+  }
 }
 
 async function scanRoots(roots: string[]) {
@@ -389,6 +447,58 @@ function formatSyncedDisplay(synced: Candidate[]) {
   const lines = synced.map(formatSyncedLine)
   if (lines.length <= 12) return formatBulletList(lines, 12)
   return formatCommaList(synced.map(formatSyncedSummary), 24)
+}
+
+function wrapNoteBody(text: string) {
+  const width = noteWrapWidth()
+  return text
+    .split('\n')
+    .map((line) => wrapLine(line, width))
+    .join('\n')
+}
+
+function noteWrapWidth() {
+  const columns = process.stdout.columns ?? 80
+  return Math.min(80, Math.max(20, columns - 4))
+}
+
+function wrapLine(line: string, width: number) {
+  if (line.length <= width) return line
+  if (line.startsWith('- ')) {
+    return wrapWords(line.slice(2), width - 2, '- ', '  ')
+  }
+  return wrapWords(line, width, '', '')
+}
+
+function wrapWords(text: string, width: number, firstPrefix: string, nextPrefix: string) {
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return firstPrefix.trimEnd()
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    if (word.length > width) {
+      if (current) {
+        lines.push(current)
+        current = ''
+      }
+      for (let i = 0; i < word.length; i += width) {
+        lines.push(word.slice(i, i + width))
+      }
+      continue
+    }
+    if (!current) {
+      current = word
+      continue
+    }
+    if (current.length + 1 + word.length <= width) {
+      current = `${current} ${word}`
+      continue
+    }
+    lines.push(current)
+    current = word
+  }
+  if (current) lines.push(current)
+  return lines.map((line, index) => `${index === 0 ? firstPrefix : nextPrefix}${line}`).join('\n')
 }
 
 function formatCommaList(values: string[], max: number) {

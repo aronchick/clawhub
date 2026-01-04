@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
-    "clawdhub-schema": "^0.0.2",
+    "arktype": "^2.1.29",
     "commander": "^14.0.2",
     "fflate": "^0.8.2",
     "ignore": "^7.0.5",

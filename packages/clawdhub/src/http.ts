@@ -1,6 +1,6 @@
-import type { ArkValidator } from 'clawdhub-schema'
-import { ApiRoutes, parseArk } from 'clawdhub-schema'
 import pRetry, { AbortError } from 'p-retry'
+import type { ArkValidator } from './schema/index.js'
+import { ApiRoutes, parseArk } from './schema/index.js'
 
 type RequestArgs =
   | { method: 'GET' | 'POST'; path: string; token?: string; body?: unknown }

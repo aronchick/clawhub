@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { type Lockfile, LockfileSchema, parseArk, TEXT_FILE_EXTENSION_SET } from 'clawdhub-schema'
 import { unzipSync } from 'fflate'
 import ignore from 'ignore'
 import mime from 'mime'
+import { type Lockfile, LockfileSchema, parseArk, TEXT_FILE_EXTENSION_SET } from './schema/index.js'
 
 export async function extractZipToDir(zipBytes: Uint8Array, targetDir: string) {
   const entries = unzipSync(zipBytes)

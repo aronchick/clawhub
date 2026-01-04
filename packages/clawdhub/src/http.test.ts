@@ -1,8 +1,8 @@
 /* @vitest-environment node */
 
-import { ApiCliWhoamiResponseSchema } from 'clawdhub-schema'
 import { describe, expect, it, vi } from 'vitest'
 import { apiRequest, downloadZip } from './http'
+import { ApiCliWhoamiResponseSchema } from './schema/index.js'
 
 describe('apiRequest', () => {
   it('adds bearer token and parses json', async () => {

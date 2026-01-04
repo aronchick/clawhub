@@ -95,15 +95,12 @@ describe('cmdSync', () => {
     interactive = false
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
       if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
-      if (args.path.startsWith('/api/skill?slug=')) {
-        const slug = new URL(`https://x.test${args.path}`).searchParams.get('slug')
-        if (slug === 'new-skill') return { latestVersion: undefined, skill: null }
-        if (slug === 'synced-skill') return { latestVersion: { version: '1.2.3' }, skill: {} }
-        if (slug === 'update-skill') return { latestVersion: { version: '1.0.0' }, skill: {} }
-      }
       if (args.path.startsWith('/api/skill/resolve?')) {
         const u = new URL(`https://x.test${args.path}`)
         const slug = u.searchParams.get('slug')
+        if (slug === 'new-skill') {
+          throw new Error('Skill not found')
+        }
         if (slug === 'synced-skill') {
           return { match: { version: '1.2.3' }, latestVersion: { version: '1.2.3' } }
         }
@@ -133,15 +130,12 @@ describe('cmdSync', () => {
     })
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
       if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
-      if (args.path.startsWith('/api/skill?slug=')) {
-        const slug = new URL(`https://x.test${args.path}`).searchParams.get('slug')
-        if (slug === 'new-skill') return { latestVersion: undefined, skill: null }
-        if (slug === 'synced-skill') return { latestVersion: { version: '1.2.3' }, skill: {} }
-        if (slug === 'update-skill') return { latestVersion: { version: '1.0.0' }, skill: {} }
-      }
       if (args.path.startsWith('/api/skill/resolve?')) {
         const u = new URL(`https://x.test${args.path}`)
         const slug = u.searchParams.get('slug')
+        if (slug === 'new-skill') {
+          throw new Error('Skill not found')
+        }
         if (slug === 'synced-skill') {
           return { match: { version: '1.2.3' }, latestVersion: { version: '1.2.3' } }
         }
@@ -171,9 +165,6 @@ describe('cmdSync', () => {
     interactive = false
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
       if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
-      if (args.path.startsWith('/api/skill?slug=')) {
-        return { latestVersion: { version: '1.0.0' }, skill: {} }
-      }
       if (args.path.startsWith('/api/skill/resolve?')) {
         return { match: { version: '1.0.0' }, latestVersion: { version: '1.0.0' } }
       }
@@ -204,9 +195,6 @@ describe('cmdSync', () => {
 
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
       if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
-      if (args.path.startsWith('/api/skill?slug=')) {
-        return { latestVersion: undefined, skill: null }
-      }
       if (args.path.startsWith('/api/skill/resolve?')) {
         return { match: null, latestVersion: null }
       }
@@ -224,15 +212,12 @@ describe('cmdSync', () => {
     interactive = true
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
       if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
-      if (args.path.startsWith('/api/skill?slug=')) {
-        const slug = new URL(`https://x.test${args.path}`).searchParams.get('slug')
-        if (slug === 'new-skill') return { latestVersion: undefined, skill: null }
-        if (slug === 'synced-skill') return { latestVersion: { version: '1.2.3' }, skill: {} }
-        if (slug === 'update-skill') return { latestVersion: { version: '1.0.0' }, skill: {} }
-      }
       if (args.path.startsWith('/api/skill/resolve?')) {
         const u = new URL(`https://x.test${args.path}`)
         const slug = u.searchParams.get('slug')
+        if (slug === 'new-skill') {
+          throw new Error('Skill not found')
+        }
         if (slug === 'synced-skill') {
           return { match: { version: '1.2.3' }, latestVersion: { version: '1.2.3' } }
         }

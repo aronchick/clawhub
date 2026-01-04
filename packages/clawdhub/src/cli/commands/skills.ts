@@ -1,13 +1,13 @@
 import { mkdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import semver from 'semver'
+import { apiRequest, downloadZip } from '../../http.js'
 import {
   ApiRoutes,
   ApiSearchResponseSchema,
   ApiSkillMetaResponseSchema,
   ApiSkillResolveResponseSchema,
-} from 'clawdhub-schema'
-import semver from 'semver'
-import { apiRequest, downloadZip } from '../../http.js'
+} from '../../schema/index.js'
 import {
   extractZipToDir,
   hashSkillFiles,
