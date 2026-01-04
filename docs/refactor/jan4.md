@@ -2,6 +2,6 @@
 - [x] ~~Add `state` nonce to browser auth (`clawdhub auth login`) and validate on loopback receiver~~
 - [x] ~~Well-known v1: `/.well-known/clawdhub.json` => `{ apiBase, authBase?, minCliVersion? }` (keep backward compat)~~
 - [x] ~~Centralize registry resolution (single `getRegistry()`), cache discovery in global config~~
-- [ ] Split `packages/clawdhub/src/cli.ts` into modules (<500 LOC per file)
+- [x] ~~Split `packages/clawdhub/src/cli.ts` into modules (<500 LOC per file)~~
 - [ ] Proxy `https://clawdhub.com/api/*` to discovered `apiBase` (single-base-URL UX)
 - [ ] Full gate: `bun run lint`, `bun run test`, `bun run coverage`, `bun run build`, CI green

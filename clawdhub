@@ -5,13 +5,14 @@ import { fileURLToPath } from 'node:url'
 
 const distCliUrl = new URL('./packages/clawdhub/dist/cli.js', import.meta.url)
 const distCliPath = fileURLToPath(distCliUrl)
-const srcCliPath = fileURLToPath(new URL('./packages/clawdhub/src/cli.ts', import.meta.url))
+const srcRootPath = fileURLToPath(new URL('./packages/clawdhub/src/', import.meta.url))
 
 const shouldBuild = await (async () => {
   if (!existsSync(distCliPath)) return true
   try {
-    const [src, dist] = await Promise.all([stat(srcCliPath), stat(distCliPath)])
-    return src.mtimeMs > dist.mtimeMs
+    const dist = await stat(distCliPath)
+    const latestSrcMtime = await getLatestMtime(srcRootPath)
+    return latestSrcMtime > dist.mtimeMs
   } catch {
     return true
   }
@@ -28,3 +29,18 @@ if (shouldBuild) {
 }
 
 await import(distCliUrl.href)
+
+async function getLatestMtime(root: string) {
+  let latest = 0
+  const glob = new Bun.Glob('**/*.ts')
+  for await (const rel of glob.scan({ cwd: root, onlyFiles: true })) {
+    const path = `${root}${root.endsWith('/') ? '' : '/'}${rel}`
+    try {
+      const entry = await stat(path)
+      latest = Math.max(latest, entry.mtimeMs)
+    } catch {
+      // ignore
+    }
+  }
+  return latest
+}

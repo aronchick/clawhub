@@ -28,6 +28,7 @@ export default defineConfig({
         'dist/',
         'coverage/',
         'convex/_generated/',
+        'packages/clawdhub/src/cli/**',
         'packages/clawdhub/src/cli.ts',
         'packages/clawdhub/src/config.ts',
         'packages/clawdhub/src/types.ts',
