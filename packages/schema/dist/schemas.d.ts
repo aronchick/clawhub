@@ -30,12 +30,12 @@ export declare const ApiCliWhoamiResponseSchema: import("arktype/internal/varian
     };
 }, {}>;
 export declare const ApiSearchResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
-    results: [{
+    results: {
         score: number;
         slug?: string | undefined;
         displayName?: string | undefined;
         version?: string | null | undefined;
-    }];
+    }[];
 }, {}>;
 export declare const ApiSkillMetaResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
     latestVersion?: {

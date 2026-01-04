@@ -2,7 +2,12 @@
 
 import { describe, expect, it } from 'vitest'
 import { parseArk } from './ark'
-import { CliPublishRequestSchema, LockfileSchema, WellKnownConfigSchema } from './schemas'
+import {
+  ApiSearchResponseSchema,
+  CliPublishRequestSchema,
+  LockfileSchema,
+  WellKnownConfigSchema,
+} from './schemas'
 
 describe('@clawdhub/schema', () => {
   it('parses lockfile records', () => {
@@ -66,5 +71,22 @@ describe('@clawdhub/schema', () => {
 
   it('throws labeled errors', () => {
     expect(() => parseArk(LockfileSchema, null, 'Lockfile')).toThrow(/Lockfile:/)
+  })
+
+  it('parses search results arrays', () => {
+    expect(parseArk(ApiSearchResponseSchema, { results: [] }, 'Search')).toEqual({ results: [] })
+
+    const parsed = parseArk(
+      ApiSearchResponseSchema,
+      {
+        results: [
+          { slug: 'a', displayName: 'A', version: '1.0.0', score: 0.9 },
+          { slug: 'b', displayName: 'B', version: null, score: 0.1 },
+        ],
+      },
+      'Search',
+    )
+    expect(parsed.results).toHaveLength(2)
+    expect(parsed.results[0]?.slug).toBe('a')
   })
 })

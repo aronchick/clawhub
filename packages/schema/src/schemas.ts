@@ -35,14 +35,12 @@ export const ApiCliWhoamiResponseSchema = type({
 })
 
 export const ApiSearchResponseSchema = type({
-  results: [
-    {
-      slug: 'string?',
-      displayName: 'string?',
-      version: 'string|null?',
-      score: 'number',
-    },
-  ],
+  results: type({
+    slug: 'string?',
+    displayName: 'string?',
+    version: 'string|null?',
+    score: 'number',
+  }).array(),
 })
 
 export const ApiSkillMetaResponseSchema = type({
