@@ -48,9 +48,10 @@ function Search() {
           {isSearching ? 'Searching…' : 'Search'}
         </button>
       </form>
-      <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      <label className="search-filter">
         <input
           type="checkbox"
+          className="search-filter-input"
           checked={approvedOnly}
           onChange={(event) => setApprovedOnly(event.target.checked)}
         />
