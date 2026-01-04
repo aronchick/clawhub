@@ -119,7 +119,11 @@ function Settings() {
           />
         </div>
         <div className="settings-actions">
-          <button className="btn btn-primary settings-save" type="button" onClick={() => void onCreateToken()}>
+          <button
+            className="btn btn-primary settings-save"
+            type="button"
+            onClick={() => void onCreateToken()}
+          >
             Create token
           </button>
           {newToken ? (
