@@ -55,6 +55,24 @@ describe('skills', () => {
     expect(files.map((file) => file.relPath)).toEqual(['SKILL.md'])
   })
 
+  it('respects .gitignore and .clawdhubignore', async () => {
+    const workdir = await mkdtemp(join(tmpdir(), 'clawdhub-ignore-'))
+    await writeFile(join(workdir, '.gitignore'), 'ignored.md\n', 'utf8')
+    await writeFile(join(workdir, '.clawdhubignore'), 'private.md\n', 'utf8')
+    await writeFile(join(workdir, 'SKILL.md'), 'hi', 'utf8')
+    await writeFile(join(workdir, 'ignored.md'), 'no', 'utf8')
+    await writeFile(join(workdir, 'private.md'), 'no', 'utf8')
+    await writeFile(join(workdir, 'public.json'), '{}', 'utf8')
+
+    const files = await listTextFiles(workdir)
+    const paths = files.map((file) => file.relPath).sort()
+    expect(paths).toEqual(['SKILL.md', 'public.json'])
+    expect(files.find((file) => file.relPath === 'SKILL.md')?.contentType).toMatch(/^text\//)
+    expect(files.find((file) => file.relPath === 'public.json')?.contentType).toBe(
+      'application/json',
+    )
+  })
+
   it('hashes skill files deterministically', async () => {
     const { fingerprint } = hashSkillFiles([
       { relPath: 'b.txt', bytes: strToU8('b') },

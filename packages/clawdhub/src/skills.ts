@@ -3,6 +3,8 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { type Lockfile, LockfileSchema, parseArk, TEXT_FILE_EXTENSION_SET } from '@clawdhub/schema'
 import { unzipSync } from 'fflate'
+import ignore from 'ignore'
+import mime from 'mime'
 
 export async function extractZipToDir(zipBytes: Uint8Array, targetDir: string) {
   const entries = unzipSync(zipBytes)
@@ -19,13 +21,20 @@ export async function extractZipToDir(zipBytes: Uint8Array, targetDir: string) {
 export async function listTextFiles(root: string) {
   const files: Array<{ relPath: string; bytes: Uint8Array; contentType?: string }> = []
   const absRoot = resolve(root)
+  const ig = ignore()
+  ig.add(['.git/', 'node_modules/', '.clawdhub/'])
+  await addIgnoreFile(ig, join(absRoot, '.gitignore'))
+  await addIgnoreFile(ig, join(absRoot, '.clawdhubignore'))
+
   await walk(absRoot, async (absPath) => {
     const relPath = normalizePath(relative(absRoot, absPath))
     if (!relPath) return
+    if (ig.ignores(relPath)) return
     const ext = relPath.split('.').at(-1)?.toLowerCase() ?? ''
     if (!ext || !TEXT_FILE_EXTENSION_SET.has(ext)) return
     const buffer = await readFile(absPath)
-    files.push({ relPath, bytes: new Uint8Array(buffer) })
+    const contentType = mime.getType(relPath) ?? 'text/plain'
+    files.push({ relPath, bytes: new Uint8Array(buffer), contentType })
   })
   return files
 }
@@ -97,5 +106,14 @@ async function walk(dir: string, onFile: (path: string) => Promise<void>) {
     }
     if (!entry.isFile()) continue
     await onFile(full)
+  }
+}
+
+async function addIgnoreFile(ig: ReturnType<typeof ignore>, path: string) {
+  try {
+    const raw = await readFile(path, 'utf8')
+    ig.add(raw.split(/\r?\n/))
+  } catch {
+    // optional
   }
 }
