@@ -1,10 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAction, useConvexAuth, useMutation, useQuery } from 'convex/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { ClawdisSkillMetadata, SkillInstallSpec } from '../../../convex/lib/skills'
 
 export const Route = createFileRoute('/skills/$slug')({
   component: SkillDetail,
@@ -49,6 +50,15 @@ function SkillDetail() {
   const versionById = new Map<Id<'skillVersions'>, Doc<'skillVersions'>>(
     (versions ?? []).map((version) => [version._id, version]),
   )
+  const clawdis = (latestVersion?.parsed as { clawdis?: ClawdisSkillMetadata } | undefined)
+    ?.clawdis
+  const osLabels = useMemo(() => formatOsList(clawdis?.os), [clawdis?.os])
+  const requirements = clawdis?.requires
+  const installSpecs = clawdis?.install ?? []
+  const readmeContent = useMemo(() => {
+    if (!readme) return null
+    return stripFrontmatter(readme)
+  }, [readme])
 
   useEffect(() => {
     if (!latestVersion) return
@@ -106,7 +116,9 @@ function SkillDetail() {
               SKILL.md
             </h2>
             <div className="markdown">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{readme ?? 'Loading…'}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {readmeContent ?? 'Loading…'}
+              </ReactMarkdown>
             </div>
           </div>
           <div className="card">
@@ -172,6 +184,75 @@ function SkillDetail() {
           </div>
         </div>
         <div style={{ display: 'grid', gap: 16 }}>
+          {clawdis ? (
+            <div className="card">
+              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+                Requirements
+              </h3>
+              <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+                {clawdis.emoji ? <div className="tag">{clawdis.emoji} Clawdis</div> : null}
+                {osLabels.length ? (
+                  <div className="stat">
+                    <strong>OS</strong>
+                    <span>{osLabels.join(' · ')}</span>
+                  </div>
+                ) : null}
+                {requirements?.bins?.length ? (
+                  <div className="stat">
+                    <strong>Bins</strong>
+                    <span>{requirements.bins.join(', ')}</span>
+                  </div>
+                ) : null}
+                {requirements?.anyBins?.length ? (
+                  <div className="stat">
+                    <strong>Any bin</strong>
+                    <span>{requirements.anyBins.join(', ')}</span>
+                  </div>
+                ) : null}
+                {requirements?.env?.length ? (
+                  <div className="stat">
+                    <strong>Env</strong>
+                    <span>{requirements.env.join(', ')}</span>
+                  </div>
+                ) : null}
+                {requirements?.config?.length ? (
+                  <div className="stat">
+                    <strong>Config</strong>
+                    <span>{requirements.config.join(', ')}</span>
+                  </div>
+                ) : null}
+                {clawdis.primaryEnv ? (
+                  <div className="stat">
+                    <strong>Primary env</strong>
+                    <span>{clawdis.primaryEnv}</span>
+                  </div>
+                ) : null}
+              </div>
+              {installSpecs.length ? (
+                <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
+                  <div className="section-subtitle" style={{ margin: 0 }}>
+                    Install
+                  </div>
+                  {installSpecs.map((spec, index) => {
+                    const command = formatInstallCommand(spec)
+                    return (
+                      <div key={`${spec.id ?? spec.kind}-${index}`} className="stat">
+                        <div>
+                          <strong>{spec.label ?? formatInstallLabel(spec)}</strong>
+                          {spec.bins?.length ? (
+                            <div style={{ color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+                              Bins: {spec.bins.join(', ')}
+                            </div>
+                          ) : null}
+                          {command ? <code>{command}</code> : null}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <div className="card">
             <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
               Versions
@@ -199,7 +280,7 @@ function SkillDetail() {
             <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
               Tags
             </h3>
-            <div style={{ display: 'grid', gap: 8 }}>
+            <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
               {tagEntries.map(([tag, versionId]) => (
                 <div key={tag} className="stat">
                   <strong>{tag}</strong>
@@ -207,12 +288,7 @@ function SkillDetail() {
                 </div>
               ))}
             </div>
-          </div>
-          {canManage ? (
-            <div className="card">
-              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                Rollback / tag
-              </h3>
+            {canManage ? (
               <form
                 onSubmit={(event) => {
                   event.preventDefault()
@@ -222,7 +298,7 @@ function SkillDetail() {
                     tags: [{ tag: tagName.trim(), versionId: tagVersionId }],
                   })
                 }}
-                style={{ display: 'grid', gap: 10, marginTop: 10 }}
+                style={{ display: 'grid', gap: 10, marginTop: 16 }}
               >
                 <input
                   className="search-input"
@@ -245,8 +321,8 @@ function SkillDetail() {
                   Update tag
                 </button>
               </form>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
           <div className="card">
             <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
               Download
@@ -262,4 +338,50 @@ function SkillDetail() {
       </div>
     </main>
   )
+}
+
+function stripFrontmatter(content: string) {
+  const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  if (!normalized.startsWith('---')) return content
+  const endIndex = normalized.indexOf('\n---', 3)
+  if (endIndex === -1) return content
+  return normalized.slice(endIndex + 4).replace(/^\n+/, '')
+}
+
+function formatOsList(os?: string[]) {
+  if (!os?.length) return []
+  return os.map((entry) => {
+    const key = entry.trim().toLowerCase()
+    if (key === 'darwin' || key === 'macos' || key === 'mac') return 'macOS'
+    if (key === 'linux') return 'Linux'
+    if (key === 'windows' || key === 'win32') return 'Windows'
+    return entry
+  })
+}
+
+function formatInstallLabel(spec: SkillInstallSpec) {
+  if (spec.kind === 'brew') return 'Homebrew'
+  if (spec.kind === 'node') return 'Node'
+  if (spec.kind === 'go') return 'Go'
+  if (spec.kind === 'uv') return 'uv'
+  return 'Install'
+}
+
+function formatInstallCommand(spec: SkillInstallSpec) {
+  if (spec.kind === 'brew' && spec.formula) {
+    if (spec.tap && !spec.formula.includes('/')) {
+      return `brew install ${spec.tap}/${spec.formula}`
+    }
+    return `brew install ${spec.formula}`
+  }
+  if (spec.kind === 'node' && spec.package) {
+    return `npm i -g ${spec.package}`
+  }
+  if (spec.kind === 'go' && spec.module) {
+    return `go install ${spec.module}`
+  }
+  if (spec.kind === 'uv' && spec.package) {
+    return `uv tool install ${spec.package}`
+  }
+  return null
 }

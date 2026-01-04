@@ -6,6 +6,7 @@ export type SkillInstallSpec = {
   label?: string
   bins?: string[]
   formula?: string
+  tap?: string
   package?: string
   module?: string
 }
@@ -227,6 +228,7 @@ function parseInstallSpec(input: unknown): SkillInstallSpec | undefined {
   const bins = normalizeStringList(raw.bins)
   if (bins.length > 0) spec.bins = bins
   if (typeof raw.formula === 'string') spec.formula = raw.formula
+  if (typeof raw.tap === 'string') spec.tap = raw.tap
   if (typeof raw.package === 'string') spec.package = raw.package
   if (typeof raw.module === 'string') spec.module = raw.module
   return spec
