@@ -1,3 +1,4 @@
+import { realpath } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { intro, isCancel, multiselect, note, outro, text } from '@clack/prompts'
@@ -65,7 +66,11 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
   } else {
     spinner.stop()
   }
-  const skills = scan.skills
+  const deduped = dedupeSkillsBySlug(scan.skills)
+  const skills = deduped.skills
+  if (deduped.duplicates.length > 0) {
+    note('Skipped duplicate slugs', formatCommaList(deduped.duplicates, 16))
+  }
   const parsingSpinner = createSpinner('Parsing local skills')
   const locals: LocalSkill[] = []
   try {
@@ -121,7 +126,7 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
             registry,
             {
               method: 'GET',
-              path: `${ApiRoutes.skillResolve}?slug=${encodeURIComponent(skill.slug)}&hash=${encodeURIComponent(fingerprint)}`,
+              path: `${ApiRoutes.skillResolve}?slug=${encodeURIComponent(skill.slug)}&hash=${encodeURIComponent(skill.fingerprint)}`,
             },
             ApiSkillResolveResponseSchema,
           )
@@ -142,7 +147,7 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
       if (supportsResolve === false) {
         const zip = await downloadZip(registry, { slug: skill.slug, version: latestVersion })
         const remote = hashSkillZip(zip).fingerprint
-        matchVersion = remote === fingerprint ? latestVersion : null
+        matchVersion = remote === skill.fingerprint ? latestVersion : null
       }
 
         candidates.push({
@@ -219,7 +224,8 @@ function buildScanRoots(opts: GlobalOpts, extraRoots: string[] | undefined) {
 async function scanRoots(roots: string[]) {
   const all: SkillFolder[] = []
   const rootsWithSkills: string[] = []
-  for (const root of roots) {
+  const uniqueRoots = await dedupeRoots(roots)
+  for (const root of uniqueRoots) {
     const found = await findSkillFolders(root)
     if (found.length > 0) rootsWithSkills.push(root)
     all.push(...found)
@@ -229,6 +235,20 @@ async function scanRoots(roots: string[]) {
     byFolder.set(folder.folder, folder)
   }
   return { skills: Array.from(byFolder.values()), rootsWithSkills }
+}
+
+async function dedupeRoots(roots: string[]) {
+  const seen = new Set<string>()
+  const unique: string[] = []
+  for (const root of roots) {
+    const resolved = resolve(root)
+    const canonical = await realpath(resolved).catch(() => null)
+    const key = canonical ?? resolved
+    if (seen.has(key)) continue
+    seen.add(key)
+    unique.push(key)
+  }
+  return unique
 }
 
 async function selectToUpload(
@@ -312,6 +332,22 @@ function abbreviatePath(value: string) {
   const home = homedir()
   if (value.startsWith(home)) return `~${value.slice(home.length)}`
   return value
+}
+
+function dedupeSkillsBySlug(skills: SkillFolder[]) {
+  const bySlug = new Map<string, SkillFolder[]>()
+  for (const skill of skills) {
+    const existing = bySlug.get(skill.slug)
+    if (existing) existing.push(skill)
+    else bySlug.set(skill.slug, [skill])
+  }
+  const unique: SkillFolder[] = []
+  const duplicates: string[] = []
+  for (const [slug, entries] of bySlug.entries()) {
+    unique.push(entries[0] as SkillFolder)
+    if (entries.length > 1) duplicates.push(`${slug} (${entries.length})`)
+  }
+  return { skills: unique, duplicates }
 }
 
 function formatActionableStatus(
