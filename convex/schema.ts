@@ -127,6 +127,18 @@ const auditLogs = defineTable({
   .index('by_actor', ['actorUserId'])
   .index('by_target', ['targetType', 'targetId'])
 
+const apiTokens = defineTable({
+  userId: v.id('users'),
+  label: v.string(),
+  prefix: v.string(),
+  tokenHash: v.string(),
+  createdAt: v.number(),
+  lastUsedAt: v.optional(v.number()),
+  revokedAt: v.optional(v.number()),
+})
+  .index('by_user', ['userId'])
+  .index('by_hash', ['tokenHash'])
+
 export default defineSchema({
   ...authTables,
   users,
@@ -136,4 +148,5 @@ export default defineSchema({
   comments,
   stars,
   auditLogs,
+  apiTokens,
 })

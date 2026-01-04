@@ -2,6 +2,7 @@ import { ConvexError, v } from 'convex/values'
 import semver from 'semver'
 import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
+import type { ActionCtx } from './_generated/server'
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { assertRole, requireUser, requireUserFromAction } from './lib/access'
 import { generateEmbedding } from './lib/embeddings'
@@ -21,6 +22,21 @@ type PublishResult = {
   skillId: Id<'skills'>
   versionId: Id<'skillVersions'>
   embeddingId: Id<'skillEmbeddings'>
+}
+
+type PublishVersionArgs = {
+  slug: string
+  displayName: string
+  version: string
+  changelog: string
+  tags?: string[]
+  files: Array<{
+    path: string
+    size: number
+    storageId: Id<'_storage'>
+    sha256: string
+    contentType?: string
+  }>
 }
 
 type ReadmeResult = { path: string; text: string }
@@ -129,94 +145,99 @@ export const publishVersion: ReturnType<typeof action> = action({
   },
   handler: async (ctx, args): Promise<PublishResult> => {
     const { userId } = await requireUserFromAction(ctx)
-
-    const version = args.version.trim()
-    const slug = args.slug.trim().toLowerCase()
-    const displayName = args.displayName.trim()
-    if (!slug || !displayName) throw new ConvexError('Slug and display name required')
-    if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
-      throw new ConvexError('Slug must be lowercase and url-safe')
-    }
-    if (!semver.valid(version)) {
-      throw new ConvexError('Version must be valid semver')
-    }
-    const existingSkill = await ctx.runQuery(internal.skills.getSkillBySlugInternal, { slug })
-    const changelogText = args.changelog.trim()
-    if (existingSkill && !changelogText) {
-      throw new ConvexError('Changelog is required for updates')
-    }
-
-    const sanitizedFiles = args.files.map((file) => ({
-      ...file,
-      path: sanitizePath(file.path),
-    }))
-    if (sanitizedFiles.some((file) => !file.path)) {
-      throw new ConvexError('Invalid file paths')
-    }
-    if (
-      sanitizedFiles.some((file) => !isTextFile(file.path ?? '', file.contentType ?? undefined))
-    ) {
-      throw new ConvexError('Only text-based files are allowed')
-    }
-
-    const totalBytes = sanitizedFiles.reduce((sum, file) => sum + file.size, 0)
-    if (totalBytes > MAX_TOTAL_BYTES) {
-      throw new ConvexError('Skill bundle exceeds 50MB limit')
-    }
-
-    const readmeFile = sanitizedFiles.find(
-      (file) => file.path?.toLowerCase() === 'skill.md' || file.path?.toLowerCase() === 'skills.md',
-    )
-    if (!readmeFile) throw new ConvexError('SKILL.md is required')
-
-    const readmeText = await fetchText(ctx, readmeFile.storageId)
-    const frontmatter = parseFrontmatter(readmeText)
-    const clawdis = parseClawdisMetadata(frontmatter)
-    const metadataRaw = getFrontmatterValue(frontmatter, 'metadata')
-    const metadata = metadataRaw ? safeJson(metadataRaw) : undefined
-
-    const otherFiles = [] as Array<{ path: string; content: string }>
-    for (const file of sanitizedFiles) {
-      if (!file.path || file.path.toLowerCase().endsWith('.md')) continue
-      if (!isTextFile(file.path, file.contentType ?? undefined)) continue
-      const content = await fetchText(ctx, file.storageId)
-      otherFiles.push({ path: file.path, content })
-      if (otherFiles.length >= MAX_FILES_FOR_EMBEDDING) break
-    }
-
-    const embeddingText = buildEmbeddingText({
-      frontmatter,
-      readme: readmeText,
-      otherFiles,
-    })
-
-    let embedding: number[]
-    try {
-      embedding = await generateEmbedding(embeddingText)
-    } catch (error) {
-      throw new ConvexError(formatEmbeddingError(error))
-    }
-
-    return ctx.runMutation(internal.skills.insertVersion, {
-      userId,
-      slug,
-      displayName,
-      version,
-      changelog: changelogText,
-      tags: args.tags?.map((tag) => tag.trim()).filter(Boolean),
-      files: sanitizedFiles.map((file) => ({
-        ...file,
-        path: file.path ?? '',
-      })),
-      parsed: {
-        frontmatter,
-        metadata,
-        clawdis,
-      },
-      embedding,
-    })
+    return publishVersionForUser(ctx, userId, args)
   },
 })
+
+export async function publishVersionForUser(
+  ctx: ActionCtx,
+  userId: Id<'users'>,
+  args: PublishVersionArgs,
+): Promise<PublishResult> {
+  const version = args.version.trim()
+  const slug = args.slug.trim().toLowerCase()
+  const displayName = args.displayName.trim()
+  if (!slug || !displayName) throw new ConvexError('Slug and display name required')
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+    throw new ConvexError('Slug must be lowercase and url-safe')
+  }
+  if (!semver.valid(version)) {
+    throw new ConvexError('Version must be valid semver')
+  }
+  const existingSkill = await ctx.runQuery(internal.skills.getSkillBySlugInternal, { slug })
+  const changelogText = args.changelog.trim()
+  if (existingSkill && !changelogText) {
+    throw new ConvexError('Changelog is required for updates')
+  }
+
+  const sanitizedFiles = args.files.map((file) => ({
+    ...file,
+    path: sanitizePath(file.path),
+  }))
+  if (sanitizedFiles.some((file) => !file.path)) {
+    throw new ConvexError('Invalid file paths')
+  }
+  if (sanitizedFiles.some((file) => !isTextFile(file.path ?? '', file.contentType ?? undefined))) {
+    throw new ConvexError('Only text-based files are allowed')
+  }
+
+  const totalBytes = sanitizedFiles.reduce((sum, file) => sum + file.size, 0)
+  if (totalBytes > MAX_TOTAL_BYTES) {
+    throw new ConvexError('Skill bundle exceeds 50MB limit')
+  }
+
+  const readmeFile = sanitizedFiles.find(
+    (file) => file.path?.toLowerCase() === 'skill.md' || file.path?.toLowerCase() === 'skills.md',
+  )
+  if (!readmeFile) throw new ConvexError('SKILL.md is required')
+
+  const readmeText = await fetchText(ctx, readmeFile.storageId)
+  const frontmatter = parseFrontmatter(readmeText)
+  const clawdis = parseClawdisMetadata(frontmatter)
+  const metadataRaw = getFrontmatterValue(frontmatter, 'metadata')
+  const metadata = metadataRaw ? safeJson(metadataRaw) : undefined
+
+  const otherFiles = [] as Array<{ path: string; content: string }>
+  for (const file of sanitizedFiles) {
+    if (!file.path || file.path.toLowerCase().endsWith('.md')) continue
+    if (!isTextFile(file.path, file.contentType ?? undefined)) continue
+    const content = await fetchText(ctx, file.storageId)
+    otherFiles.push({ path: file.path, content })
+    if (otherFiles.length >= MAX_FILES_FOR_EMBEDDING) break
+  }
+
+  const embeddingText = buildEmbeddingText({
+    frontmatter,
+    readme: readmeText,
+    otherFiles,
+  })
+
+  let embedding: number[]
+  try {
+    embedding = await generateEmbedding(embeddingText)
+  } catch (error) {
+    throw new ConvexError(formatEmbeddingError(error))
+  }
+
+  return ctx.runMutation(internal.skills.insertVersion, {
+    userId,
+    slug,
+    displayName,
+    version,
+    changelog: changelogText,
+    tags: args.tags?.map((tag) => tag.trim()).filter(Boolean),
+    files: sanitizedFiles.map((file) => ({
+      ...file,
+      path: file.path ?? '',
+    })),
+    parsed: {
+      frontmatter,
+      metadata,
+      clawdis,
+    },
+    embedding,
+  })
+}
 
 export const getReadme: ReturnType<typeof action> = action({
   args: { versionId: v.id('skillVersions') },
