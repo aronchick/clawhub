@@ -8,5 +8,5 @@
 - [x] ~~Add `clawdbot` + more legacy skill roots (auto-detect)~~
 - [x] ~~Add unit tests: `sync` status classification (new/update/synced)~~
 - [x] ~~Docs: auth + `bunx` vs `bun clawdhub` shortcut usage~~
-- [ ] Gate: `lint` + `test` + `build` (+ `test:e2e` when token set)
+- [x] ~~Gate: `lint` + `test` + `build` (+ `test:e2e` when token set)~~
 - [ ] Verify GitHub Actions CI green
