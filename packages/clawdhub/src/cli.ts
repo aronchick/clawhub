@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 import { resolve } from 'node:path'
 import { Command } from 'commander'
+import { getCliBuildLabel, getCliVersion } from './cli/buildInfo.js'
 import { cmdLoginFlow, cmdLogout, cmdWhoami } from './cli/commands/auth.js'
 import { cmdPublish } from './cli/commands/publish.js'
 import { cmdInstall, cmdList, cmdSearch, cmdUpdate } from './cli/commands/skills.js'
+import { configureCommanderHelp, styleEnvBlock, styleTitle } from './cli/helpStyle.js'
 import { DEFAULT_REGISTRY, DEFAULT_SITE } from './cli/registry.js'
 import type { GlobalOpts } from './cli/types.js'
 import { fail } from './cli/ui.js'
 
 const program = new Command()
   .name('clawdhub')
-  .description('ClawdHub CLI — install, update, search, and publish agent skills.')
+  .description(
+    `${styleTitle(`ClawdHub CLI ${getCliBuildLabel()}`)}\n${styleEnvBlock(
+      'install, update, search, and publish agent skills.',
+    )}`,
+  )
+  .version(getCliVersion(), '-V, --version', 'Show version')
   .option('--workdir <dir>', 'Working directory (default: cwd)')
   .option('--dir <dir>', 'Skills directory (relative to workdir, default: skills)')
   .option('--site <url>', 'Site base URL (for browser login)')
@@ -18,7 +25,9 @@ const program = new Command()
   .option('--no-input', 'Disable prompts')
   .showHelpAfterError()
   .showSuggestionAfterError()
-  .addHelpText('after', '\nEnv:\n  CLAWDHUB_SITE\n  CLAWDHUB_REGISTRY\n')
+  .addHelpText('after', styleEnvBlock('\nEnv:\n  CLAWDHUB_SITE\n  CLAWDHUB_REGISTRY\n'))
+
+configureCommanderHelp(program)
 
 function resolveGlobalOpts(): GlobalOpts {
   const raw = program.opts<{ workdir?: string; dir?: string; site?: string; registry?: string }>()
