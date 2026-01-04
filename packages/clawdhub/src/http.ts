@@ -1,8 +1,21 @@
+import type { ArkValidator } from './shared/ark.js'
+import { parseArk } from './shared/ark.js'
+
 type RequestArgs =
   | { method: 'GET' | 'POST'; path: string; token?: string; body?: unknown }
   | { method: 'GET' | 'POST'; url: string; token?: string; body?: unknown }
 
-export async function apiRequest<T>(registry: string, args: RequestArgs): Promise<T> {
+export async function apiRequest<T>(registry: string, args: RequestArgs): Promise<T>
+export async function apiRequest<T>(
+  registry: string,
+  args: RequestArgs,
+  schema: ArkValidator<T>,
+): Promise<T>
+export async function apiRequest<T>(
+  registry: string,
+  args: RequestArgs,
+  schema?: ArkValidator<T>,
+): Promise<T> {
   const url = 'url' in args ? args.url : new URL(args.path, registry).toString()
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (args.token) headers.Authorization = `Bearer ${args.token}`
@@ -16,7 +29,9 @@ export async function apiRequest<T>(registry: string, args: RequestArgs): Promis
     const text = await response.text().catch(() => '')
     throw new Error(text || `HTTP ${response.status}`)
   }
-  return (await response.json()) as T
+  const json = (await response.json()) as unknown
+  if (schema) return parseArk(schema, json, 'API response')
+  return json as T
 }
 
 export async function downloadZip(registry: string, args: { slug: string; version?: string }) {
