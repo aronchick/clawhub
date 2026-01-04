@@ -11,7 +11,7 @@ export const Route = createFileRoute('/search')({
 function Search() {
   const searchSkills = useAction(api.search.searchSkills)
   const [query, setQuery] = useState('')
-  const [approvedOnly, setApprovedOnly] = useState(true)
+  const [highlightedOnly, setHighlightedOnly] = useState(false)
   const [results, setResults] = useState<
     Array<{ skill: Doc<'skills'>; version: Doc<'skillVersions'> | null; score: number }>
   >([])
@@ -22,7 +22,7 @@ function Search() {
     if (!query.trim()) return
     setIsSearching(true)
     try {
-      const data = (await searchSkills({ query, approvedOnly })) as Array<{
+      const data = (await searchSkills({ query, highlightedOnly })) as Array<{
         skill: Doc<'skills'>
         version: Doc<'skillVersions'> | null
         score: number
@@ -52,10 +52,10 @@ function Search() {
         <input
           type="checkbox"
           className="search-filter-input"
-          checked={approvedOnly}
-          onChange={(event) => setApprovedOnly(event.target.checked)}
+          checked={highlightedOnly}
+          onChange={(event) => setHighlightedOnly(event.target.checked)}
         />
-        Only redaction-approved skills
+        Highlighted only
       </label>
 
       <div className="grid" style={{ marginTop: 24 }}>
@@ -76,8 +76,8 @@ function Search() {
               <p className="section-subtitle" style={{ margin: 0 }}>
                 {result.skill.summary ?? 'Skill pack'}
               </p>
-              {result.skill.badges?.redactionApproved ? (
-                <div className="tag">Redaction approved</div>
+              {result.skill.batch === 'highlighted' ? (
+                <div className="tag">Highlighted</div>
               ) : null}
             </Link>
           ))

@@ -16,7 +16,7 @@ export const searchSkills: ReturnType<typeof action> = action({
   args: {
     query: v.string(),
     limit: v.optional(v.number()),
-    approvedOnly: v.optional(v.boolean()),
+    highlightedOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<SearchResult[]> => {
     const query = args.query.trim()
@@ -25,10 +25,7 @@ export const searchSkills: ReturnType<typeof action> = action({
     const results = await ctx.vectorSearch('skillEmbeddings', 'by_embedding', {
       vector,
       limit: args.limit ?? 10,
-      filter: (q) =>
-        args.approvedOnly
-          ? q.eq('visibility', 'latest-approved')
-          : q.or(q.eq('visibility', 'latest'), q.eq('visibility', 'latest-approved')),
+      filter: (q) => q.or(q.eq('visibility', 'latest'), q.eq('visibility', 'latest-approved')),
     })
 
     const hydrated = (await ctx.runQuery(internal.search.hydrateResults, {
@@ -39,7 +36,11 @@ export const searchSkills: ReturnType<typeof action> = action({
       results.map((result) => [result._id, result._score]),
     )
 
-    return hydrated
+    const filtered = args.highlightedOnly
+      ? hydrated.filter((entry) => entry.skill?.batch === 'highlighted')
+      : hydrated
+
+    return filtered
       .map((entry) => ({
         ...entry,
         score: scoreById.get(entry.embeddingId) ?? 0,
