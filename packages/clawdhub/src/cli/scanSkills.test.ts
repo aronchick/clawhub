@@ -45,5 +45,6 @@ describe('scanSkills', () => {
     const roots = getFallbackSkillRoots('/tmp/anywhere')
     expect(roots.some((p) => p.endsWith('/clawdis/skills'))).toBe(true)
     expect(roots.some((p) => p.endsWith('/clawd/skills'))).toBe(true)
+    expect(roots.some((p) => p.endsWith('/clawdbot/skills'))).toBe(true)
   })
 })

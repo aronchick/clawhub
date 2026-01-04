@@ -35,6 +35,8 @@ export function getFallbackSkillRoots(workdir: string) {
     // adjacent repo installs
     resolve(workdir, '..', 'clawdis', 'skills'),
     resolve(workdir, '..', 'clawdis', 'Skills'),
+    resolve(workdir, '..', 'clawdbot', 'skills'),
+    resolve(workdir, '..', 'clawdbot', 'Skills'),
 
     // legacy locations
     resolve(home, 'clawd', 'skills'),
@@ -42,12 +44,19 @@ export function getFallbackSkillRoots(workdir: string) {
     resolve(home, '.clawd', 'skills'),
     resolve(home, '.clawd', 'Skills'),
 
+    resolve(home, 'clawdbot', 'skills'),
+    resolve(home, 'clawdbot', 'Skills'),
+    resolve(home, '.clawdbot', 'skills'),
+    resolve(home, '.clawdbot', 'Skills'),
+
     resolve(home, 'clawdis', 'skills'),
     resolve(home, 'clawdis', 'Skills'),
     resolve(home, '.clawdis', 'skills'),
     resolve(home, '.clawdis', 'Skills'),
 
     // macOS App Support legacy
+    resolve(home, 'Library', 'Application Support', 'clawdbot', 'skills'),
+    resolve(home, 'Library', 'Application Support', 'clawdbot', 'Skills'),
     resolve(home, 'Library', 'Application Support', 'clawdis', 'skills'),
     resolve(home, 'Library', 'Application Support', 'clawdis', 'Skills'),
   ]
