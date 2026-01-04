@@ -103,11 +103,12 @@ function SkillDetail() {
             {skill.batch === 'highlighted' ? <div className="tag">Highlighted</div> : null}
             {isAuthenticated ? (
               <button
-                className="btn"
+                className={`star-toggle${isStarred ? ' is-active' : ''}`}
                 type="button"
                 onClick={() => void toggleStar({ skillId: skill._id })}
+                aria-label={isStarred ? 'Unstar skill' : 'Star skill'}
               >
-                {isStarred ? 'Unstar' : 'Star'}
+                <span aria-hidden="true">★</span>
               </button>
             ) : null}
           </div>
