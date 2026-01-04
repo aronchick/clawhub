@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 
-import { Upload } from './upload'
+import { Upload } from '../routes/upload'
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (config: { component: unknown }) => config,
