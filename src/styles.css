@@ -59,8 +59,7 @@ body {
   color: var(--ink);
   background:
     radial-gradient(1200px 800px at 20% -10%, var(--bg-glow-1) 0%, transparent 60%),
-    radial-gradient(900px 600px at 90% 10%, var(--bg-glow-2) 0%, transparent 60%),
-    var(--bg);
+    radial-gradient(900px 600px at 90% 10%, var(--bg-glow-2) 0%, transparent 60%), var(--bg);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -449,6 +448,22 @@ code {
   display: none;
 }
 
+.dropzone-button {
+  all: unset;
+  display: grid;
+  gap: 12px;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.dropzone-button:focus-visible {
+  outline: 3px solid rgba(255, 107, 74, 0.35);
+  outline-offset: 6px;
+  border-radius: 18px;
+}
+
 .upload-summary {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.7);
@@ -721,7 +736,9 @@ code {
   font-size: 1rem;
   color: var(--ink);
   outline: none;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .settings-input:focus {

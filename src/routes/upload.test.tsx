@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 
+import { Upload } from './upload'
+
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (config: { component: unknown }) => config,
   useNavigate: () => vi.fn(),
 }))
-import { Upload } from './upload'
 
 const generateUploadUrl = vi.fn()
 const publishVersion = vi.fn()

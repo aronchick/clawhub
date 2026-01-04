@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAction, useConvexAuth, useMutation, useQuery } from 'convex/react'
-import semver from 'semver'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import semver from 'semver'
 import { api } from '../../convex/_generated/api'
 import { expandFiles } from '../lib/uploadFiles'
 
@@ -42,10 +42,7 @@ export function Upload() {
   const trimmedName = displayName.trim()
   const trimmedChangelog = changelog.trim()
   const lookupSlug = trimmedSlug && SLUG_PATTERN.test(trimmedSlug) ? trimmedSlug : ''
-  const existingSkill = useQuery(
-    api.skills.getBySlug,
-    lookupSlug ? { slug: lookupSlug } : 'skip',
-  )
+  const existingSkill = useQuery(api.skills.getBySlug, lookupSlug ? { slug: lookupSlug } : 'skip')
   const parsedTags = useMemo(
     () =>
       tags
@@ -96,7 +93,6 @@ export function Upload() {
     files.length,
     hasSkillFile,
     totalBytes,
-    maxBytes,
   ])
 
   useEffect(() => {
@@ -214,13 +210,13 @@ export function Upload() {
     )
   }
 
-  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+  function handleDrop(event: React.DragEvent<HTMLButtonElement>) {
     event.preventDefault()
     setIsDragging(false)
-    handleFilesSelected(Array.from(event.dataTransfer.files ?? []))
+    void handleFilesSelected(Array.from(event.dataTransfer.files ?? []))
   }
 
-  function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
+  function handleDragOver(event: React.DragEvent<HTMLButtonElement>) {
     event.preventDefault()
     setIsDragging(true)
   }
@@ -235,7 +231,9 @@ export function Upload() {
         <div>
           <span className="upload-kicker">Publish</span>
           <h1 className="upload-title">Publish a skill</h1>
-          <p className="upload-subtitle">Bundle SKILL.md + text files. Tag it, version it, ship it.</p>
+          <p className="upload-subtitle">
+            Bundle SKILL.md + text files. Tag it, version it, ship it.
+          </p>
         </div>
       </header>
       <form className="upload-card" onSubmit={handleSubmit}>
@@ -291,25 +289,21 @@ export function Upload() {
             </label>
           </div>
           <div className="upload-side">
-            <div
-              className={`dropzone${isDragging ? ' is-dragging' : ''}`}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  fileInputRef.current?.click()
-                }
-              }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="dropzone-icon">⬇</div>
-              <div>
-                <strong>Drop a folder, files, or zip</strong>
-                <p>Click to choose a folder. Archives auto-extract.</p>
-              </div>
+            <div className={`dropzone${isDragging ? ' is-dragging' : ''}`}>
+              <button
+                className="dropzone-button"
+                type="button"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="dropzone-icon">⬇</div>
+                <div>
+                  <strong>Drop a folder, files, or zip</strong>
+                  <p>Click to choose a folder. Archives auto-extract.</p>
+                </div>
+              </button>
               <input
                 ref={fileInputRef}
                 className="dropzone-input"
