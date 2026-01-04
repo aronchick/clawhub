@@ -9,8 +9,11 @@ export async function discoverRegistryFromSite(siteUrl: string) {
   if (!response.ok) return null
   const raw = (await response.json()) as unknown
   const parsed = parseArk(WellKnownConfigSchema, raw, 'WellKnown config')
+  const apiBase = 'apiBase' in parsed ? parsed.apiBase : parsed.registry
+  if (!apiBase) return null
   return {
-    registry: parsed.registry,
+    apiBase,
     authBase: parsed.authBase,
+    minCliVersion: parsed.minCliVersion,
   }
 }

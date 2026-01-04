@@ -42,6 +42,14 @@ describe('@clawdhub/schema', () => {
         'WellKnown',
       ),
     ).toEqual({ registry: 'https://example.convex.site', authBase: 'https://clawdhub.com' })
+
+    expect(
+      parseArk(
+        WellKnownConfigSchema,
+        { apiBase: 'https://example.convex.site', minCliVersion: '0.1.0' },
+        'WellKnown',
+      ),
+    ).toEqual({ apiBase: 'https://example.convex.site', minCliVersion: '0.1.0' })
   })
 
   it('throws labeled errors', () => {

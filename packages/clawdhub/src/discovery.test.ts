@@ -28,8 +28,9 @@ describe('discovery', () => {
       ) as unknown as typeof fetch,
     )
     await expect(discoverRegistryFromSite('https://example.com')).resolves.toEqual({
-      registry: 'https://example.convex.site',
+      apiBase: 'https://example.convex.site',
       authBase: undefined,
+      minCliVersion: undefined,
     })
   })
 })

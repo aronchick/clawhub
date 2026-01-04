@@ -7,8 +7,13 @@ export const GlobalConfigSchema = type({
 export type GlobalConfig = (typeof GlobalConfigSchema)[inferred]
 
 export const WellKnownConfigSchema = type({
+  apiBase: 'string',
+  authBase: 'string?',
+  minCliVersion: 'string?',
+}).or({
   registry: 'string',
   authBase: 'string?',
+  minCliVersion: 'string?',
 })
 export type WellKnownConfig = (typeof WellKnownConfigSchema)[inferred]
 

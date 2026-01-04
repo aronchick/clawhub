@@ -617,7 +617,7 @@ async function resolveRegistry(opts: GlobalOpts) {
   if (explicit && explicit !== DEFAULT_REGISTRY) return explicit
 
   const discovery = await discoverRegistryFromSite(opts.site).catch(() => null)
-  const discovered = discovery?.registry?.trim()
+  const discovered = discovery?.apiBase?.trim()
   return discovered || explicit || DEFAULT_REGISTRY
 }
 
