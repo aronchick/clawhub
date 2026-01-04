@@ -4,8 +4,8 @@
   - ~~Make `@clawdhub/schema` publishable + switch consumers from `workspace:*` to semver.~~
 - ~~Shared pure helpers:~~
   - ~~De-dupe text-file rules (extensions + content-types) between CLI + Convex.~~
-- Shared HTTP contracts:
-  - Centralize API route paths + request/response schemas in `@clawdhub/schema`.
+- ~~Shared HTTP contracts:~~
+  - ~~Centralize API route paths + request/response schemas in `@clawdhub/schema`.~~
 - CLI upload ergonomics:
   - Add `ignore` (respect `.gitignore` / `.clawdhubignore` during file collection).
   - Add `mime` (better `contentType` on upload).

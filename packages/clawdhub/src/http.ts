@@ -1,5 +1,5 @@
 import type { ArkValidator } from '@clawdhub/schema'
-import { parseArk } from '@clawdhub/schema'
+import { ApiRoutes, parseArk } from '@clawdhub/schema'
 import pRetry, { AbortError } from 'p-retry'
 
 type RequestArgs =
@@ -45,7 +45,7 @@ export async function apiRequest<T>(
 }
 
 export async function downloadZip(registry: string, args: { slug: string; version?: string }) {
-  const url = new URL('/api/download', registry)
+  const url = new URL(ApiRoutes.download, registry)
   url.searchParams.set('slug', args.slug)
   if (args.version) url.searchParams.set('version', args.version)
   return pRetry(

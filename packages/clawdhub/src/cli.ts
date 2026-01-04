@@ -7,6 +7,7 @@ import {
   ApiCliPublishResponseSchema,
   ApiCliUploadUrlResponseSchema,
   ApiCliWhoamiResponseSchema,
+  ApiRoutes,
   ApiSearchResponseSchema,
   ApiSkillMetaResponseSchema,
   ApiSkillResolveResponseSchema,
@@ -157,7 +158,7 @@ async function cmdLogin(opts: GlobalOpts, tokenFlag?: string) {
   try {
     const whoami = await apiRequest(
       opts.registry,
-      { method: 'GET', path: '/api/cli/whoami', token },
+      { method: 'GET', path: ApiRoutes.cliWhoami, token },
       ApiCliWhoamiResponseSchema,
     )
     if (!whoami.user) fail('Login failed')
@@ -186,7 +187,7 @@ async function cmdWhoami(opts: GlobalOpts) {
   try {
     const whoami = await apiRequest(
       registry,
-      { method: 'GET', path: '/api/cli/whoami', token },
+      { method: 'GET', path: ApiRoutes.cliWhoami, token },
       ApiCliWhoamiResponseSchema,
     )
     spinner.succeed(whoami.user.handle ?? 'unknown')
@@ -201,7 +202,7 @@ async function cmdSearch(opts: GlobalOpts, query: string, limit?: number) {
 
   const spinner = createSpinner('Searching')
   try {
-    const url = new URL('/api/search', opts.registry)
+    const url = new URL(ApiRoutes.search, opts.registry)
     url.searchParams.set('q', query)
     if (typeof limit === 'number' && Number.isFinite(limit)) {
       url.searchParams.set('limit', String(limit))
@@ -457,7 +458,7 @@ async function cmdPublish(
       spinner.text = `Uploading ${file.relPath} (${index}/${filesOnDisk.length})`
       const { uploadUrl } = await apiRequest(
         registry,
-        { method: 'POST', path: '/api/cli/upload-url', token },
+        { method: 'POST', path: ApiRoutes.cliUploadUrl, token },
         ApiCliUploadUrlResponseSchema,
       )
 
@@ -480,7 +481,7 @@ async function cmdPublish(
     )
     const result = await apiRequest(
       registry,
-      { method: 'POST', path: '/api/cli/publish', token, body },
+      { method: 'POST', path: ApiRoutes.cliPublish, token, body },
       ApiCliPublishResponseSchema,
     )
 
@@ -492,7 +493,7 @@ async function cmdPublish(
 }
 
 async function resolveSkillVersion(registry: string, slug: string, hash: string) {
-  const url = new URL('/api/skill/resolve', registry)
+  const url = new URL(ApiRoutes.skillResolve, registry)
   url.searchParams.set('slug', slug)
   url.searchParams.set('hash', hash)
   return apiRequest(registry, { method: 'GET', url: url.toString() }, ApiSkillResolveResponseSchema)
