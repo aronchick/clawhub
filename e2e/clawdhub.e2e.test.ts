@@ -10,6 +10,7 @@ import {
   ApiSearchResponseSchema,
   parseArk,
 } from 'clawdhub-schema'
+import { unzipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { readGlobalConfig } from '../packages/clawdhub/src/config'
 
@@ -31,6 +32,15 @@ async function makeTempConfig(registry: string, token: string | null) {
 }
 
 describe('clawdhub e2e', () => {
+  it('prints CLI version via --cli-version', async () => {
+    const result = spawnSync('bun', ['clawdhub', '--cli-version'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    })
+    expect(result.status).toBe(0)
+    expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/)
+  })
+
   it('search endpoint returns a results array (schema parse)', async () => {
     const registry = process.env.CLAWDHUB_REGISTRY?.trim() || 'https://clawdhub.com'
     const url = new URL(ApiRoutes.search, registry)
@@ -174,6 +184,7 @@ describe('clawdhub e2e', () => {
 
     const cfg = await makeTempConfig(registry, token)
     const workdir = await mkdtemp(join(tmpdir(), 'clawdhub-e2e-publish-'))
+    const installWorkdir = await mkdtemp(join(tmpdir(), 'clawdhub-e2e-install-'))
     const slug = `e2e-${Date.now()}`
     const skillDir = join(workdir, slug)
 
@@ -241,6 +252,73 @@ describe('clawdhub e2e', () => {
       expect(publish2.status).toBe(0)
       expect(publish2.stderr).not.toMatch(/changelog required/i)
 
+      const downloadUrl = new URL(ApiRoutes.download, registry)
+      downloadUrl.searchParams.set('slug', slug)
+      downloadUrl.searchParams.set('version', '1.0.1')
+      const zipRes = await fetch(downloadUrl.toString())
+      expect(zipRes.ok).toBe(true)
+      const zipBytes = new Uint8Array(await zipRes.arrayBuffer())
+      const unzipped = unzipSync(zipBytes)
+      expect(Object.keys(unzipped)).toContain('SKILL.md')
+
+      const install = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'install',
+          slug,
+          '--version',
+          '1.0.0',
+          '--force',
+          '--site',
+          site,
+          '--registry',
+          registry,
+          '--workdir',
+          installWorkdir,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(install.status).toBe(0)
+
+      const list = spawnSync(
+        'bun',
+        ['clawdhub', 'list', '--site', site, '--registry', registry, '--workdir', installWorkdir],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(list.status).toBe(0)
+      expect(list.stdout).toMatch(new RegExp(`${slug}\\s+1\\.0\\.0`))
+
+      const update = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'update',
+          slug,
+          '--force',
+          '--site',
+          site,
+          '--registry',
+          registry,
+          '--workdir',
+          installWorkdir,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(update.status).toBe(0)
+
       const metaUrl = new URL(ApiRoutes.skill, registry)
       metaUrl.searchParams.set('slug', slug)
       const metaRes = await fetch(metaUrl.toString(), { headers: { Accept: 'application/json' } })
@@ -273,9 +351,6 @@ describe('clawdhub e2e', () => {
       })
       expect(metaAfterDelete.status).toBe(404)
 
-      const downloadUrl = new URL(ApiRoutes.download, registry)
-      downloadUrl.searchParams.set('slug', slug)
-      downloadUrl.searchParams.set('version', '1.0.1')
       const downloadAfterDelete = await fetch(downloadUrl.toString())
       expect(downloadAfterDelete.status).toBe(404)
 
@@ -330,6 +405,7 @@ describe('clawdhub e2e', () => {
         // best-effort cleanup
       }
       await rm(workdir, { recursive: true, force: true })
+      await rm(installWorkdir, { recursive: true, force: true })
       await rm(cfg.dir, { recursive: true, force: true })
     }
   }, 180_000)

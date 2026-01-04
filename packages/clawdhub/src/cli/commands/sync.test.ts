@@ -6,6 +6,7 @@ import type { GlobalOpts } from '../types'
 const mockIntro = vi.fn()
 const mockOutro = vi.fn()
 const mockNote = vi.fn()
+let interactive = false
 
 vi.mock('@clack/prompts', () => ({
   intro: (value: string) => mockIntro(value),
@@ -39,7 +40,7 @@ vi.mock('../ui.js', () => ({
   createSpinner: vi.fn(() => mockSpinner),
   fail: (message: string) => mockFail(message),
   formatError: (error: unknown) => (error instanceof Error ? error.message : String(error)),
-  isInteractive: () => false,
+  isInteractive: () => interactive,
 }))
 
 vi.mock('../scanSkills.js', () => ({
@@ -86,6 +87,7 @@ afterEach(() => {
 
 describe('cmdSync', () => {
   it('classifies skills as new/update/synced (dry-run, mocked HTTP)', async () => {
+    interactive = false
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
       if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
       if (args.path.startsWith('/api/skill?slug=')) {
@@ -116,5 +118,38 @@ describe('cmdSync', () => {
 
     const dryRunOutro = mockOutro.mock.calls.at(-1)?.[0]
     expect(String(dryRunOutro)).toMatch(/Dry run: would upload 2 skill/)
+  })
+
+  it('allows empty changelog for updates (interactive)', async () => {
+    interactive = true
+    mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
+      if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
+      if (args.path.startsWith('/api/skill?slug=')) {
+        const slug = new URL(`https://x.test${args.path}`).searchParams.get('slug')
+        if (slug === 'new-skill') return { latestVersion: undefined, skill: null }
+        if (slug === 'synced-skill') return { latestVersion: { version: '1.2.3' }, skill: {} }
+        if (slug === 'update-skill') return { latestVersion: { version: '1.0.0' }, skill: {} }
+      }
+      if (args.path.startsWith('/api/skill/resolve?')) {
+        const u = new URL(`https://x.test${args.path}`)
+        const slug = u.searchParams.get('slug')
+        if (slug === 'synced-skill') {
+          return { match: { version: '1.2.3' }, latestVersion: { version: '1.2.3' } }
+        }
+        if (slug === 'update-skill') {
+          return { match: null, latestVersion: { version: '1.0.0' } }
+        }
+      }
+      throw new Error(`Unexpected apiRequest: ${args.path}`)
+    })
+
+    await cmdSync(makeOpts(), { root: ['/scan'], all: true, dryRun: false, bump: 'patch' }, true)
+
+    const calls = mockCmdPublish.mock.calls.map(
+      (call) => call[2] as { slug: string; changelog: string },
+    )
+    const update = calls.find((c) => c.slug === 'update-skill')
+    if (!update) throw new Error('Missing update-skill publish')
+    expect(update.changelog).toBe('')
   })
 })

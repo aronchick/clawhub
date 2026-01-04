@@ -271,4 +271,42 @@ describe('httpApi handlers', () => {
     })
     expect(await response.json()).toEqual({ ok: true })
   })
+
+  it('cliSkillDeleteHandler supports undelete', async () => {
+    vi.mocked(requireApiTokenUser).mockResolvedValueOnce({ userId: 'user1' } as never)
+    const runMutation = vi.fn().mockResolvedValue({ ok: true })
+    const request = new Request('https://x/api/cli/skill/undelete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: 'demo' }),
+    })
+    const response = await __handlers.cliSkillDeleteHandler(
+      { runMutation } as never,
+      request,
+      false,
+    )
+    expect(response.status).toBe(200)
+    expect(runMutation).toHaveBeenCalledWith(expect.anything(), {
+      userId: 'user1',
+      slug: 'demo',
+      deleted: false,
+    })
+  })
+
+  it('cliSkillDeleteHandler returns 400 on invalid json', async () => {
+    const request = new Request('https://x/api/cli/skill/delete', { method: 'POST', body: '{' })
+    const response = await __handlers.cliSkillDeleteHandler({} as never, request, true)
+    expect(response.status).toBe(400)
+  })
+
+  it('cliSkillDeleteHandler returns 400 on invalid payload', async () => {
+    vi.mocked(requireApiTokenUser).mockResolvedValueOnce({ userId: 'user1' } as never)
+    const request = new Request('https://x/api/cli/skill/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    const response = await __handlers.cliSkillDeleteHandler({} as never, request, true)
+    expect(response.status).toBe(400)
+  })
 })

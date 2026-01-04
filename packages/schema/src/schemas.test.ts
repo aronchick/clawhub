@@ -5,6 +5,7 @@ import { parseArk } from './ark'
 import {
   ApiSearchResponseSchema,
   CliPublishRequestSchema,
+  CliSkillDeleteRequestSchema,
   LockfileSchema,
   WellKnownConfigSchema,
 } from './schemas'
@@ -88,5 +89,11 @@ describe('clawdhub-schema', () => {
     )
     expect(parsed.results).toHaveLength(2)
     expect(parsed.results[0]?.slug).toBe('a')
+  })
+
+  it('parses delete request payload', () => {
+    expect(parseArk(CliSkillDeleteRequestSchema, { slug: 'demo' }, 'Delete')).toEqual({
+      slug: 'demo',
+    })
   })
 })
