@@ -45,7 +45,9 @@ function Home() {
               </Link>
             </div>
             <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
-              <div className="stat">Search skills. Versioned, rollback-ready, redaction-checked.</div>
+              <div className="stat">
+                Search skills. Versioned, rollback-ready, redaction-checked.
+              </div>
             </div>
           </div>
         </div>
