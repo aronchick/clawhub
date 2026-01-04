@@ -11,5 +11,7 @@
   - ~~Add `mime` (better `contentType` on upload).~~
 - ~~Dependency hygiene:~~
   - ~~Remove unused deps: `@radix-ui/react-slot`, `web-vitals`, `@tanstack/react-router-ssr-query` (keep `lucide-react`, used).~~
+- ~~Coverage:~~
+  - ~~Add tests for `src/lib/theme-transition.ts` to meet global coverage thresholds.~~
 - CI:
   - Add GitHub Actions workflow: install, lint, test, coverage, build.
