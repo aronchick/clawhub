@@ -34,6 +34,11 @@ type Candidate = SkillFolder & {
   latestVersion: string | null
 }
 
+type LocalSkill = SkillFolder & {
+  fingerprint: string
+  fileCount: number
+}
+
 export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllowed: boolean) {
   const allowPrompt = isInteractive() && inputAllowed !== false
   intro('ClawdHub sync')
@@ -61,14 +66,36 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
     spinner.stop()
   }
   const skills = scan.skills
+  const parsingSpinner = createSpinner('Parsing local skills')
+  const locals: LocalSkill[] = []
+  try {
+    let index = 0
+    for (const skill of skills) {
+      index += 1
+      parsingSpinner.text = `Parsing local skills ${index}/${skills.length}`
+      const filesOnDisk = await listTextFiles(skill.folder)
+      const hashed = hashSkillFiles(filesOnDisk)
+      locals.push({
+        ...skill,
+        fingerprint: hashed.fingerprint,
+        fileCount: filesOnDisk.length,
+      })
+    }
+  } catch (error) {
+    parsingSpinner.fail(formatError(error))
+    throw error
+  } finally {
+    parsingSpinner.stop()
+  }
+
   const candidatesSpinner = createSpinner('Checking registry sync state')
   const candidates: Candidate[] = []
   let supportsResolve: boolean | null = null
   try {
-    for (const skill of skills) {
-      const filesOnDisk = await listTextFiles(skill.folder)
-      const hashed = hashSkillFiles(filesOnDisk)
-      const fingerprint = hashed.fingerprint
+    let index = 0
+    for (const skill of locals) {
+      index += 1
+      candidatesSpinner.text = `Checking registry sync state ${index}/${locals.length}`
 
       const meta = await apiRequest(
         registry,
@@ -80,8 +107,6 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
       if (!latestVersion) {
         candidates.push({
           ...skill,
-          fingerprint,
-          fileCount: filesOnDisk.length,
           status: 'new',
           matchVersion: null,
           latestVersion: null,
@@ -120,15 +145,13 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
         matchVersion = remote === fingerprint ? latestVersion : null
       }
 
-      candidates.push({
-        ...skill,
-        fingerprint,
-        fileCount: filesOnDisk.length,
-        status: matchVersion ? 'synced' : 'update',
-        matchVersion,
-        latestVersion,
-      })
-    }
+        candidates.push({
+          ...skill,
+          status: matchVersion ? 'synced' : 'update',
+          matchVersion,
+          latestVersion,
+        })
+      }
   } catch (error) {
     candidatesSpinner.fail(formatError(error))
     throw error
