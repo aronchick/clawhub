@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { strToU8, zipSync } from 'fflate'
 import { vi } from 'vitest'
 
 import { Upload } from '../routes/upload'
@@ -16,7 +17,6 @@ vi.mock('convex/react', () => ({
   useConvexAuth: () => ({ isAuthenticated: true }),
   useMutation: () => generateUploadUrl,
   useAction: () => publishVersion,
-  useQuery: () => null,
 }))
 
 describe('Upload route', () => {
@@ -81,6 +81,64 @@ describe('Upload route', () => {
     expect(screen.queryByText(/Add at least one file/i)).toBeNull()
     fireEvent.click(publishButton)
     expect(await screen.findByText(/Add at least one file/i)).toBeTruthy()
+  })
+
+  it('extracts zip uploads and unwraps top-level folders', async () => {
+    render(<Upload />)
+    fireEvent.change(screen.getByPlaceholderText('my-skill-pack'), {
+      target: { value: 'cool-skill' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('My Skill Pack'), {
+      target: { value: 'Cool Skill' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('1.0.0'), {
+      target: { value: '1.2.3' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('latest, beta'), {
+      target: { value: 'latest' },
+    })
+
+    const zip = zipSync({
+      'hetzner-cloud-skill/SKILL.md': new Uint8Array(strToU8('hello')),
+      'hetzner-cloud-skill/notes.txt': new Uint8Array(strToU8('notes')),
+    })
+    const zipBytes = zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength)
+    const zipFile = new File([zipBytes], 'bundle.zip', { type: 'application/zip' })
+
+    const input = screen.getByTestId('upload-input') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [zipFile] } })
+
+    expect(await screen.findByText('notes.txt', {}, { timeout: 3000 })).toBeTruthy()
+    expect(screen.getByText('SKILL.md')).toBeTruthy()
+    expect(await screen.findByText(/Ready to publish/i, {}, { timeout: 3000 })).toBeTruthy()
+  })
+
+  it('blocks non-text folder uploads (png)', async () => {
+    render(<Upload />)
+    fireEvent.change(screen.getByPlaceholderText('my-skill-pack'), {
+      target: { value: 'cool-skill' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('My Skill Pack'), {
+      target: { value: 'Cool Skill' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('1.0.0'), {
+      target: { value: '1.2.3' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('latest, beta'), {
+      target: { value: 'latest' },
+    })
+
+    const skill = new File(['hello'], 'SKILL.md', { type: 'text/markdown' })
+    const png = new File([new Uint8Array([137, 80, 78, 71]).buffer], 'screenshot.png', {
+      type: 'image/png',
+    })
+    const input = screen.getByTestId('upload-input') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [skill, png] } })
+
+    expect(await screen.findByText('screenshot.png')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /publish/i }))
+    expect(await screen.findByText(/Remove non-text files: screenshot\.png/i)).toBeTruthy()
+    expect(screen.getByText('screenshot.png')).toBeTruthy()
   })
 
   it('surfaces publish errors and stays on page', async () => {

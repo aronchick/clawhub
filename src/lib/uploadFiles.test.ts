@@ -71,10 +71,36 @@ describe('expandFiles', () => {
     expect(result.map((file) => file.name)).toEqual(['SKILL.md', 'docs/readme.txt'])
   })
 
+  it('unwraps top-level folders in zip archives', async () => {
+    const zip = zipSync({
+      'hetzner-cloud-skill/SKILL.md': strToU8('hello'),
+      'hetzner-cloud-skill/docs/readme.txt': strToU8('doc'),
+      '__MACOSX/._SKILL.md': strToU8('junk'),
+      'hetzner-cloud-skill/.DS_Store': strToU8('junk2'),
+      'hetzner-cloud-skill/screenshot.png': strToU8('not-really-a-png'),
+    })
+    const zipFile = new File([zip.buffer], 'pack.zip', { type: 'application/zip' })
+    const result = await expandFiles([zipFile])
+    expect(result.map((file) => file.name)).toEqual(['SKILL.md', 'docs/readme.txt'])
+    const png = result.find((file) => file.name.endsWith('.png'))
+    expect(png).toBeUndefined()
+  })
+
   it('expands gzipped tar archives into files', async () => {
     const tar = buildTar([
       { name: 'SKILL.md', content: 'hi' },
       { name: 'notes.txt', content: 'yo' },
+    ])
+    const tgz = gzipSync(tar)
+    const tgzFile = new File([tgz.buffer], 'bundle.tgz', { type: 'application/gzip' })
+    const result = await expandFiles([tgzFile])
+    expect(result.map((file) => file.name)).toEqual(['SKILL.md', 'notes.txt'])
+  })
+
+  it('unwraps top-level folders in tar.gz archives', async () => {
+    const tar = buildTar([
+      { name: 'skill-folder/SKILL.md', content: 'hi' },
+      { name: 'skill-folder/notes.txt', content: 'yo' },
     ])
     const tgz = gzipSync(tar)
     const tgzFile = new File([tgz.buffer], 'bundle.tgz', { type: 'application/gzip' })

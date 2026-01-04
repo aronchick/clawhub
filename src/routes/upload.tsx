@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAction, useConvexAuth, useMutation, useQuery } from 'convex/react'
+import { isTextContentType, TEXT_FILE_EXTENSION_SET } from 'clawdhub-schema'
+import { useAction, useConvexAuth, useMutation } from 'convex/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import semver from 'semver'
 import { api } from '../../convex/_generated/api'
@@ -41,8 +42,6 @@ export function Upload() {
   const trimmedSlug = slug.trim()
   const trimmedName = displayName.trim()
   const trimmedChangelog = changelog.trim()
-  const lookupSlug = trimmedSlug && SLUG_PATTERN.test(trimmedSlug) ? trimmedSlug : ''
-  const existingSkill = useQuery(api.skills.getBySlug, lookupSlug ? { slug: lookupSlug } : 'skip')
   const parsedTags = useMemo(
     () =>
       tags
@@ -67,14 +66,20 @@ export function Upload() {
     if (parsedTags.length === 0) {
       issues.push('At least one tag is required.')
     }
-    if (existingSkill && !trimmedChangelog) {
-      issues.push('Changelog is required for updates.')
-    }
     if (files.length === 0) {
       issues.push('Add at least one file.')
     }
     if (!hasSkillFile) {
       issues.push('SKILL.md is required.')
+    }
+    const invalidFiles = files.filter((file) => !isTextFile(file))
+    if (invalidFiles.length > 0) {
+      issues.push(
+        `Remove non-text files: ${invalidFiles
+          .slice(0, 3)
+          .map((file) => file.name)
+          .join(', ')}`,
+      )
     }
     if (totalBytes > maxBytes) {
       issues.push('Total file size exceeds 50MB.')
@@ -83,17 +88,7 @@ export function Upload() {
       issues,
       ready: issues.length === 0,
     }
-  }, [
-    trimmedSlug,
-    trimmedName,
-    version,
-    parsedTags.length,
-    trimmedChangelog,
-    existingSkill,
-    files.length,
-    hasSkillFile,
-    totalBytes,
-  ])
+  }, [trimmedSlug, trimmedName, version, parsedTags.length, files, hasSkillFile, totalBytes])
 
   useEffect(() => {
     if (!fileInputRef.current) return
@@ -443,4 +438,14 @@ function formatPublishError(error: unknown) {
     if (cleaned && cleaned !== 'Server Error') return cleaned
   }
   return 'Publish failed. Please try again.'
+}
+
+function isTextFile(file: File) {
+  const path = (file.webkitRelativePath || file.name).trim().toLowerCase()
+  if (!path) return false
+  const parts = path.split('.')
+  const extension = parts.length > 1 ? (parts.at(-1) ?? '') : ''
+  if (file.type && isTextContentType(file.type)) return true
+  if (extension && TEXT_FILE_EXTENSION_SET.has(extension)) return true
+  return false
 }
