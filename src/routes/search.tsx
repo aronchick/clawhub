@@ -35,7 +35,7 @@ function Search() {
 
   return (
     <main className="section">
-      <h1 className="section-title">Vector search</h1>
+      <h1 className="section-title">Search</h1>
       <p className="section-subtitle">Ask for capabilities, get skill packs.</p>
       <form onSubmit={onSubmit} className="search-bar" style={{ marginBottom: 20 }}>
         <input
