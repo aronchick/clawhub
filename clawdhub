@@ -1,3 +1,30 @@
 #!/usr/bin/env bun
-import './packages/clawdhub/bin/clawdhub.js'
+import { existsSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
+const distCliUrl = new URL('./packages/clawdhub/dist/cli.js', import.meta.url)
+const distCliPath = fileURLToPath(distCliUrl)
+const srcCliPath = fileURLToPath(new URL('./packages/clawdhub/src/cli.ts', import.meta.url))
+
+const shouldBuild = await (async () => {
+  if (!existsSync(distCliPath)) return true
+  try {
+    const [src, dist] = await Promise.all([stat(srcCliPath), stat(distCliPath)])
+    return src.mtimeMs > dist.mtimeMs
+  } catch {
+    return true
+  }
+})()
+
+if (shouldBuild) {
+  const proc = Bun.spawn(['bunx', 'tsc', '-p', 'packages/clawdhub/tsconfig.json'], {
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
+  })
+  const code = await proc.exited
+  if (code !== 0) process.exit(code)
+}
+
+await import(distCliUrl.href)

@@ -1,6 +1,6 @@
 - [ ] Browser-based CLI login (`clawdhub auth login`) via loopback + auto token creation (deps: none)
 - [ ] Web route `/cli/auth` to mint API token + redirect back to CLI (deps: none)
-- [ ] Local repo shortcut `bun clawdhub …` with auto-build of CLI dist (deps: none)
+- [x] ~~Local repo shortcut `bun clawdhub …` with auto-build of CLI dist (deps: none)~~
 - [ ] CLI: prefer stored `registry` from global config for all network commands (deps: none)
 - [ ] Confirm shared runtime schemas are used across CLI + Convex (`@clawdhub/schema`, `arktype`)
 - [ ] Dependency audit/update (deps: `@biomejs/biome`, `oxlint`, `vitest`, etc.)
