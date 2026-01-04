@@ -3,6 +3,10 @@ export const GlobalConfigSchema = type({
     registry: 'string',
     token: 'string',
 });
+export const WellKnownConfigSchema = type({
+    registry: 'string',
+    authBase: 'string?',
+});
 export const LockfileSchema = type({
     version: '1',
     skills: {

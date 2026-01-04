@@ -4,6 +4,11 @@ export declare const GlobalConfigSchema: import("arktype/internal/variants/objec
     token: string;
 }, {}>;
 export type GlobalConfig = (typeof GlobalConfigSchema)[inferred];
+export declare const WellKnownConfigSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    registry: string;
+    authBase?: string | undefined;
+}, {}>;
+export type WellKnownConfig = (typeof WellKnownConfigSchema)[inferred];
 export declare const LockfileSchema: import("arktype/internal/variants/object.ts").ObjectType<{
     version: 1;
     skills: {
