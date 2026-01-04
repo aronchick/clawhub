@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "clawdhub": "./bin/clawdhub.js"
+    "clawdhub": "bin/clawdhub.js"
   },
   "files": [
     "bin",
