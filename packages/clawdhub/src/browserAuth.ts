@@ -9,7 +9,7 @@ export type LoopbackAuthResult = {
 export function buildCliAuthUrl(params: { siteUrl: string; redirectUri: string; label?: string }) {
   const url = new URL('/cli/auth', params.siteUrl)
   url.searchParams.set('redirect_uri', params.redirectUri)
-  if (params.label) url.searchParams.set('label', params.label)
+  if (params.label) url.searchParams.set('label_b64', encodeBase64Url(params.label))
   return url.toString()
 }
 
@@ -147,3 +147,7 @@ const CALLBACK_HTML = `<!doctype html>
     </script>
   </body>
 </html>`
+
+function encodeBase64Url(value: string) {
+  return Buffer.from(value, 'utf8').toString('base64url')
+}

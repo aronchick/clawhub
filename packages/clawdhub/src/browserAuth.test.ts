@@ -16,7 +16,7 @@ describe('browserAuth', () => {
     })
     expect(url).toContain('https://example.com/cli/auth?')
     expect(url).toContain('redirect_uri=')
-    expect(url).toContain('label=')
+    expect(url).toContain('label_b64=')
   })
 
   it('accepts only loopback http redirect uris', () => {

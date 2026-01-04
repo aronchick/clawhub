@@ -21,6 +21,7 @@ import ora from 'ora'
 import semver from 'semver'
 import { buildCliAuthUrl, startLoopbackAuthServer } from './browserAuth.js'
 import { getGlobalConfigPath, readGlobalConfig, writeGlobalConfig } from './config.js'
+import { discoverRegistryFromSite } from './discovery.js'
 import { apiRequest, downloadZip } from './http.js'
 import {
   extractZipToDir,
@@ -44,7 +45,7 @@ type ResolveResult = {
 }
 
 const DEFAULT_SITE = 'https://clawdhub.com'
-const DEFAULT_REGISTRY = 'https://wry-manatee-359.convex.site'
+const DEFAULT_REGISTRY = 'https://clawdhub.com'
 
 const program = new Command()
   .name('clawdhub')
@@ -201,8 +202,10 @@ async function cmdLoginFlow(
 
   const label = String(options.label ?? 'CLI token').trim() || 'CLI token'
   const receiver = await startLoopbackAuthServer()
+  const discovery = await discoverRegistryFromSite(opts.site).catch(() => null)
+  const authBase = discovery?.authBase?.trim() || opts.site
   const authUrl = buildCliAuthUrl({
-    siteUrl: opts.site,
+    siteUrl: authBase,
     redirectUri: receiver.redirectUri,
     label,
   })
@@ -607,7 +610,14 @@ function titleCase(value: string) {
 
 async function resolveRegistry(opts: GlobalOpts) {
   const cfg = await readGlobalConfig()
-  return cfg?.registry ?? opts.registry
+  if (cfg?.registry) return cfg.registry
+
+  const explicit = opts.registry.trim()
+  if (explicit && explicit !== DEFAULT_REGISTRY) return explicit
+
+  const discovery = await discoverRegistryFromSite(opts.site).catch(() => null)
+  const discovered = discovery?.registry?.trim()
+  return discovered || explicit || DEFAULT_REGISTRY
 }
 
 async function fileExists(path: string) {

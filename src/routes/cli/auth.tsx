@@ -14,13 +14,13 @@ function CliAuth() {
   const me = useQuery(api.users.me)
   const createToken = useMutation(api.tokens.create)
 
-  const search = Route.useSearch() as { redirect_uri?: string; label?: string }
+  const search = Route.useSearch() as { redirect_uri?: string; label?: string; label_b64?: string }
   const [status, setStatus] = useState<string>('Preparing…')
   const [token, setToken] = useState<string | null>(null)
   const hasRun = useRef(false)
 
   const redirectUri = search.redirect_uri ?? ''
-  const label = (search.label ?? 'CLI token').trim() || 'CLI token'
+  const label = (decodeLabel(search.label_b64) ?? search.label ?? 'CLI token').trim() || 'CLI token'
 
   const safeRedirect = useMemo(() => isAllowedRedirectUri(redirectUri), [redirectUri])
   const registry = import.meta.env.VITE_CONVEX_SITE_URL as string | undefined
@@ -124,4 +124,21 @@ function isAllowedRedirectUri(value: string) {
   if (url.protocol !== 'http:') return false
   const host = url.hostname.toLowerCase()
   return host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]'
+}
+
+function decodeLabel(value: string | undefined) {
+  if (!value) return null
+  try {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const binary = atob(padded)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+    const decoded = new TextDecoder().decode(bytes)
+    const label = decoded.trim()
+    if (!label) return null
+    return label.slice(0, 80)
+  } catch {
+    return null
+  }
 }
