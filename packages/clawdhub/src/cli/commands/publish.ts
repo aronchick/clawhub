@@ -13,8 +13,8 @@ import semver from 'semver'
 import { readGlobalConfig } from '../../config.js'
 import { apiRequest } from '../../http.js'
 import { listTextFiles, sha256Hex } from '../../skills.js'
-import type { GlobalOpts } from '../types.js'
 import { getRegistry } from '../registry.js'
+import type { GlobalOpts } from '../types.js'
 import { createSpinner, fail, formatError } from '../ui.js'
 
 export async function cmdPublish(
@@ -148,4 +148,3 @@ function titleCase(value: string) {
     .replace(/\s+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
-

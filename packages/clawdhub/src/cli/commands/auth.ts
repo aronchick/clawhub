@@ -3,8 +3,8 @@ import { buildCliAuthUrl, startLoopbackAuthServer } from '../../browserAuth.js'
 import { readGlobalConfig, writeGlobalConfig } from '../../config.js'
 import { discoverRegistryFromSite } from '../../discovery.js'
 import { apiRequest } from '../../http.js'
-import type { GlobalOpts } from '../types.js'
 import { getRegistry } from '../registry.js'
+import type { GlobalOpts } from '../types.js'
 import { createSpinner, fail, formatError, openInBrowser, promptHidden } from '../ui.js'
 
 export async function cmdLoginFlow(
@@ -40,7 +40,11 @@ export async function cmdLoginFlow(
   await cmdLogin({ ...opts, registry }, result.token, inputAllowed)
 }
 
-export async function cmdLogin(opts: GlobalOpts, tokenFlag: string | undefined, inputAllowed: boolean) {
+export async function cmdLogin(
+  opts: GlobalOpts,
+  tokenFlag: string | undefined,
+  inputAllowed: boolean,
+) {
   if (!tokenFlag && !inputAllowed) fail('Token required (use --token or remove --no-input)')
 
   const token = tokenFlag || (await promptHidden('ClawdHub token: '))
@@ -91,4 +95,3 @@ export async function cmdWhoami(opts: GlobalOpts) {
     throw error
   }
 }
-
