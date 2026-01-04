@@ -148,10 +148,9 @@ async function cmdSearch(opts: GlobalOpts, args: string[]) {
 
   const url = new URL('/api/search', opts.registry)
   url.searchParams.set('q', query)
-  const result = await apiRequest<{ results: Array<{ slug?: string; displayName?: string; version?: string | null; score: number }> }>(
-    opts.registry,
-    { method: 'GET', url: url.toString() },
-  )
+  const result = await apiRequest<{
+    results: Array<{ slug?: string; displayName?: string; version?: string | null; score: number }>
+  }>(opts.registry, { method: 'GET', url: url.toString() })
 
   for (const entry of result.results) {
     const slug = entry.slug ?? 'unknown'
@@ -178,10 +177,12 @@ async function cmdInstall(opts: GlobalOpts, args: string[]) {
 
   const resolvedVersion =
     versionFlag ??
-    (await apiRequest<{ latestVersion: { version: string } | null }>(opts.registry, {
-      method: 'GET',
-      path: `/api/skill?slug=${encodeURIComponent(slug)}`,
-    })).latestVersion?.version ??
+    (
+      await apiRequest<{ latestVersion: { version: string } | null }>(opts.registry, {
+        method: 'GET',
+        path: `/api/skill?slug=${encodeURIComponent(slug)}`,
+      })
+    ).latestVersion?.version ??
     null
   if (!resolvedVersion) fail('Could not resolve latest version')
 
@@ -354,7 +355,10 @@ function sha256Hex(bytes: Uint8Array) {
 }
 
 function sanitizeSlug(value: string) {
-  const raw = value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-')
+  const raw = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
   const cleaned = raw.replace(/^-+/, '').replace(/-+$/, '').replace(/--+/g, '-')
   return cleaned
 }
