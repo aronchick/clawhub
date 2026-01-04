@@ -9,4 +9,3 @@ export type ResolveResult = {
   match: { version: string } | null
   latestVersion: { version: string } | null
 }
-

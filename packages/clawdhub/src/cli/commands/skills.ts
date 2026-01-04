@@ -30,7 +30,11 @@ export async function cmdSearch(opts: GlobalOpts, query: string, limit?: number)
     if (typeof limit === 'number' && Number.isFinite(limit)) {
       url.searchParams.set('limit', String(limit))
     }
-    const result = await apiRequest(registry, { method: 'GET', url: url.toString() }, ApiSearchResponseSchema)
+    const result = await apiRequest(
+      registry,
+      { method: 'GET', url: url.toString() },
+      ApiSearchResponseSchema,
+    )
 
     spinner.stop()
     for (const entry of result.results) {
@@ -45,7 +49,12 @@ export async function cmdSearch(opts: GlobalOpts, query: string, limit?: number)
   }
 }
 
-export async function cmdInstall(opts: GlobalOpts, slug: string, versionFlag?: string, force = false) {
+export async function cmdInstall(
+  opts: GlobalOpts,
+  slug: string,
+  versionFlag?: string,
+  force = false,
+) {
   const trimmed = slug.trim()
   if (!trimmed) fail('Slug required')
 
@@ -229,4 +238,3 @@ async function fileExists(path: string) {
     return false
   }
 }
-

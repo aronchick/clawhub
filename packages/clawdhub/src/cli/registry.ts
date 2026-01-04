@@ -27,4 +27,3 @@ export async function getRegistry(opts: GlobalOpts, params?: { cache?: boolean }
   }
   return registry
 }
-
