@@ -8,6 +8,7 @@ import {
   buildSkillFingerprint,
   extractZipToDir,
   hashSkillFiles,
+  hashSkillZip,
   listTextFiles,
   readLockfile,
   sha256Hex,
@@ -81,6 +82,20 @@ describe('skills', () => {
     const expected = buildSkillFingerprint([
       { path: 'a.txt', sha256: sha256Hex(strToU8('a')) },
       { path: 'b.txt', sha256: sha256Hex(strToU8('b')) },
+    ])
+    expect(fingerprint).toBe(expected)
+  })
+
+  it('hashes text files inside a downloaded zip deterministically', () => {
+    const zip = zipSync({
+      'SKILL.md': strToU8('hello'),
+      'notes.md': strToU8('world'),
+      'image.png': strToU8('nope'),
+    })
+    const { fingerprint } = hashSkillZip(new Uint8Array(zip))
+    const expected = buildSkillFingerprint([
+      { path: 'SKILL.md', sha256: sha256Hex(strToU8('hello')) },
+      { path: 'notes.md', sha256: sha256Hex(strToU8('world')) },
     ])
     expect(fingerprint).toBe(expected)
   })

@@ -63,6 +63,21 @@ export function hashSkillFiles(files: Array<{ relPath: string; bytes: Uint8Array
   return { files: hashed, fingerprint: buildSkillFingerprint(hashed) }
 }
 
+export function hashSkillZip(zipBytes: Uint8Array) {
+  const entries = unzipSync(zipBytes)
+  const hashed = Object.entries(entries)
+    .map(([rawPath, bytes]) => {
+      const safePath = sanitizeZipPath(rawPath)
+      if (!safePath) return null
+      const ext = safePath.split('.').at(-1)?.toLowerCase() ?? ''
+      if (!ext || !TEXT_FILE_EXTENSION_SET.has(ext)) return null
+      return { path: safePath, sha256: sha256Hex(bytes), size: bytes.byteLength }
+    })
+    .filter(Boolean) as SkillFileHash[]
+
+  return { files: hashed, fingerprint: buildSkillFingerprint(hashed) }
+}
+
 export async function readLockfile(workdir: string): Promise<Lockfile> {
   const path = join(workdir, '.clawdhub', 'lock.json')
   try {
@@ -92,6 +107,10 @@ function sanitizeRelPath(path: string) {
   if (!normalized || normalized.endsWith('/')) return null
   if (normalized.includes('..') || normalized.includes('\\')) return null
   return normalized
+}
+
+function sanitizeZipPath(path: string) {
+  return sanitizeRelPath(path)
 }
 
 async function walk(dir: string, onFile: (path: string) => Promise<void>) {

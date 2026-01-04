@@ -10,6 +10,7 @@ import { configureCommanderHelp, styleEnvBlock, styleTitle } from './cli/helpSty
 import { DEFAULT_REGISTRY, DEFAULT_SITE } from './cli/registry.js'
 import type { GlobalOpts } from './cli/types.js'
 import { fail } from './cli/ui.js'
+import { readGlobalConfig } from './config.js'
 
 const program = new Command()
   .name('clawdhub')
@@ -186,6 +187,17 @@ program
       isInputAllowed(),
     )
   })
+
+program.action(async () => {
+  const opts = resolveGlobalOpts()
+  const cfg = await readGlobalConfig()
+  if (cfg?.token) {
+    await cmdSync(opts, {}, isInputAllowed())
+    return
+  }
+  program.outputHelp()
+  process.exitCode = 0
+})
 
 void program.parseAsync(process.argv).catch((error) => {
   const message = error instanceof Error ? error.message : String(error)
