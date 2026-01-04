@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import type { Doc } from '../../convex/_generated/dataModel'
+import { SkillCard } from '../components/SkillCard'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -44,8 +45,10 @@ function Home() {
                 Search
               </Link>
             </div>
-            <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
+            <div className="hero-install" style={{ marginTop: 18 }}>
               <div className="stat">Search skills. Versioned, rollback-ready.</div>
+              <div className="stat">Install any skill folder in one shot:</div>
+              <div className="hero-install-code mono">npx clawdhub@latest install sonoscli</div>
             </div>
           </div>
         </div>
@@ -59,23 +62,17 @@ function Home() {
             <div className="card">No highlighted skills yet.</div>
           ) : (
             highlighted.map((skill) => (
-              <Link
+              <SkillCard
                 key={skill._id}
-                to="/skills/$slug"
-                params={{ slug: skill.slug }}
-                className="card"
-              >
-                <div className="tag">Highlighted</div>
-                <h3 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
-                  {skill.displayName}
-                </h3>
-                <p className="section-subtitle" style={{ margin: 0 }}>
-                  {skill.summary ?? 'A fresh skill bundle.'}
-                </p>
-                <div className="stat">
-                  ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads}
-                </div>
-              </Link>
+                skill={skill}
+                badge="Highlighted"
+                summaryFallback="A fresh skill bundle."
+                meta={
+                  <div className="stat">
+                    ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads}
+                  </div>
+                }
+              />
             ))
           )}
         </div>
@@ -89,20 +86,16 @@ function Home() {
             <div className="card">No skills yet. Be the first.</div>
           ) : (
             latest.map((skill) => (
-              <Link
+              <SkillCard
                 key={skill._id}
-                to="/skills/$slug"
-                params={{ slug: skill.slug }}
-                className="card"
-              >
-                <div className="stat">{skill.summary ?? 'Agent-ready skill pack.'}</div>
-                <h3 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
-                  {skill.displayName}
-                </h3>
-                <div className="stat">
-                  {skill.stats.versions} versions · {skill.stats.downloads} downloads
-                </div>
-              </Link>
+                skill={skill}
+                summaryFallback="Agent-ready skill pack."
+                meta={
+                  <div className="stat">
+                    {skill.stats.versions} versions · {skill.stats.downloads} downloads
+                  </div>
+                }
+              />
             ))
           )}
         </div>
