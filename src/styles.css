@@ -931,6 +931,28 @@ code {
   border-radius: 8px;
 }
 
+.markdown pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  background: rgba(255, 107, 74, 0.06);
+  border: 1px solid rgba(255, 107, 74, 0.12);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.markdown pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  white-space: inherit;
+}
+
+[data-theme="dark"] .markdown pre {
+  background: rgba(18, 14, 12, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 [data-theme="dark"] .markdown code {
   background: rgba(255, 131, 95, 0.2);
   color: #ffe9de;
