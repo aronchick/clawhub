@@ -5,12 +5,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/coverage/**',
-      '**/convex/_generated/**',
-    ],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/convex/_generated/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

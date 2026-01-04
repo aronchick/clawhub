@@ -1,7 +1,7 @@
 # Refactor — 2026-01-04
 
-- Publish-ready workspace deps:
-  - Make `@clawdhub/schema` publishable + switch consumers from `workspace:*` to semver.
+- ~~Publish-ready workspace deps:~~
+  - ~~Make `@clawdhub/schema` publishable + switch consumers from `workspace:*` to semver.~~
 - Shared pure helpers:
   - De-dupe text-file rules (extensions + content-types) between CLI + Convex.
 - Shared HTTP contracts:
@@ -13,4 +13,3 @@
   - Remove unused deps: `lucide-react`, `@radix-ui/react-slot`, `web-vitals`, `@tanstack/react-router-ssr-query` (verify via `rg` + build).
 - CI:
   - Add GitHub Actions workflow: install, lint, test, coverage, build.
-

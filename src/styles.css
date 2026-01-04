@@ -1008,11 +1008,13 @@ html.theme-transition::view-transition-new(theme) {
 @media (prefers-reduced-motion: reduce) {
   /* biome-ignore lint/correctness/noUnknownTypeSelector: Custom view-transition pseudo-element for theme switch. */
   html.theme-transition::view-transition-old(theme) {
+    /* biome-ignore lint/complexity/noImportantStyles: reduce-motion override */
     animation: none !important;
   }
 
   /* biome-ignore lint/correctness/noUnknownTypeSelector: Custom view-transition pseudo-element for theme switch. */
   html.theme-transition::view-transition-new(theme) {
+    /* biome-ignore lint/complexity/noImportantStyles: reduce-motion override */
     animation: none !important;
   }
 }

@@ -1,7 +1,6 @@
 {
   "name": "@clawdhub/schema",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -14,12 +13,16 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "arktype": "^2.1.29"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

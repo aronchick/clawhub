@@ -19,7 +19,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@clawdhub/schema": "workspace:*",
+    "@clawdhub/schema": "^0.1.0",
     "@clack/prompts": "^0.11.0",
     "commander": "^14.0.2",
     "fflate": "^0.8.2",

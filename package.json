@@ -19,7 +19,7 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@clawdhub/schema": "workspace:*",
+    "@clawdhub/schema": "^0.1.0",
     "@auth/core": "^0.41.1",
     "@convex-dev/auth": "^0.0.90",
     "@fontsource/bricolage-grotesque": "^5.2.10",
