@@ -50,8 +50,7 @@ function SkillDetail() {
   const versionById = new Map<Id<'skillVersions'>, Doc<'skillVersions'>>(
     (versions ?? []).map((version) => [version._id, version]),
   )
-  const clawdis = (latestVersion?.parsed as { clawdis?: ClawdisSkillMetadata } | undefined)
-    ?.clawdis
+  const clawdis = (latestVersion?.parsed as { clawdis?: ClawdisSkillMetadata } | undefined)?.clawdis
   const osLabels = useMemo(() => formatOsList(clawdis?.os), [clawdis?.os])
   const requirements = clawdis?.requires
   const installSpecs = clawdis?.install ?? []

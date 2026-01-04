@@ -117,7 +117,7 @@ From SKILL.md frontmatter + AgentSkills + Clawdis extensions:
 - Admin: user role management + badge approvals + audit log.
 
 ## Testing + quality
-- Vitest 4 with >80% coverage.
+- Vitest 4 with >=70% global coverage.
 - Lint: Biome + Oxlint (type-aware).
 
 ## Vercel

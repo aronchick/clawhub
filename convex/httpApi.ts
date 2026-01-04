@@ -4,19 +4,50 @@ import { httpAction } from './_generated/server'
 import { requireApiTokenUser } from './lib/apiTokenAuth'
 import { publishVersionForUser } from './skills'
 
-export const searchSkillsHttp = httpAction(async (ctx, request) => {
+type HttpCtx = {
+  runAction: (fn: unknown, args: unknown) => Promise<unknown>
+  runQuery: (fn: unknown, args: unknown) => Promise<unknown>
+  runMutation: (fn: unknown, args: unknown) => Promise<unknown>
+}
+
+type SearchSkillEntry = {
+  score: number
+  skill: {
+    slug?: string
+    displayName?: string
+    summary?: string | null
+    updatedAt?: number
+  } | null
+  version: { version?: string } | null
+}
+
+type GetBySlugResult = {
+  skill: {
+    slug: string
+    displayName: string
+    summary?: string
+    tags: Record<string, string>
+    stats: unknown
+    createdAt: number
+    updatedAt: number
+  } | null
+  latestVersion: { version: string; createdAt: number; changelog: string } | null
+  owner: { handle?: string; displayName?: string; image?: string } | null
+} | null
+
+async function searchSkillsHandler(ctx: HttpCtx, request: Request) {
   const url = new URL(request.url)
   const query = url.searchParams.get('q')?.trim() ?? ''
   const limit = toOptionalNumber(url.searchParams.get('limit'))
-  const highlightedOnly = url.searchParams.get('highlightedOnly') === 'true'
+  const approvedOnly = url.searchParams.get('approvedOnly') === 'true'
 
   if (!query) return json({ results: [] })
 
-  const results = await ctx.runAction(api.search.searchSkills, {
+  const results = (await ctx.runAction(api.search.searchSkills, {
     query,
     limit,
-    highlightedOnly: highlightedOnly || undefined,
-  })
+    approvedOnly: approvedOnly || undefined,
+  })) as SearchSkillEntry[]
 
   return json({
     results: results.map((result) => ({
@@ -28,14 +59,16 @@ export const searchSkillsHttp = httpAction(async (ctx, request) => {
       updatedAt: result.skill?.updatedAt,
     })),
   })
-})
+}
 
-export const getSkillHttp = httpAction(async (ctx, request) => {
+export const searchSkillsHttp = httpAction(searchSkillsHandler)
+
+async function getSkillHandler(ctx: HttpCtx, request: Request) {
   const url = new URL(request.url)
   const slug = url.searchParams.get('slug')?.trim().toLowerCase()
   if (!slug) return text('Missing slug', 400)
 
-  const result = await ctx.runQuery(api.skills.getBySlug, { slug })
+  const result = (await ctx.runQuery(api.skills.getBySlug, { slug })) as GetBySlugResult
   if (!result?.skill) return text('Skill not found', 404)
 
   return json({
@@ -63,9 +96,11 @@ export const getSkillHttp = httpAction(async (ctx, request) => {
         }
       : null,
   })
-})
+}
 
-export const cliWhoamiHttp = httpAction(async (ctx, request) => {
+export const getSkillHttp = httpAction(getSkillHandler)
+
+async function cliWhoamiHandler(ctx: HttpCtx, request: Request) {
   try {
     const { user } = await requireApiTokenUser(ctx, request)
     return json({
@@ -78,9 +113,11 @@ export const cliWhoamiHttp = httpAction(async (ctx, request) => {
   } catch {
     return text('Unauthorized', 401)
   }
-})
+}
 
-export const cliUploadUrlHttp = httpAction(async (ctx, request) => {
+export const cliWhoamiHttp = httpAction(cliWhoamiHandler)
+
+async function cliUploadUrlHandler(ctx: HttpCtx, request: Request) {
   try {
     const { userId } = await requireApiTokenUser(ctx, request)
     const uploadUrl = await ctx.runMutation(internal.uploads.generateUploadUrlForUserInternal, {
@@ -90,9 +127,11 @@ export const cliUploadUrlHttp = httpAction(async (ctx, request) => {
   } catch {
     return text('Unauthorized', 401)
   }
-})
+}
 
-export const cliPublishHttp = httpAction(async (ctx, request) => {
+export const cliUploadUrlHttp = httpAction(cliUploadUrlHandler)
+
+async function cliPublishHandler(ctx: HttpCtx, request: Request) {
   let body: unknown
   try {
     body = await request.json()
@@ -110,7 +149,9 @@ export const cliPublishHttp = httpAction(async (ctx, request) => {
     if (message.toLowerCase().includes('unauthorized')) return text('Unauthorized', 401)
     return text(message, 400)
   }
-})
+}
+
+export const cliPublishHttp = httpAction(cliPublishHandler)
 
 function json(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -178,4 +219,17 @@ function numberField(obj: Record<string, unknown>, key: string) {
   const value = obj[key]
   if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${key} must be number`)
   return value
+}
+
+export const __test = {
+  parsePublishBody,
+  toOptionalNumber,
+}
+
+export const __handlers = {
+  searchSkillsHandler,
+  getSkillHandler,
+  cliWhoamiHandler,
+  cliUploadUrlHandler,
+  cliPublishHandler,
 }

@@ -12,7 +12,7 @@
     "convex:deploy": "bunx convex deploy --typecheck=disable --yes",
     "lint": "bun run lint:biome && bun run lint:oxlint",
     "lint:biome": "biome check .",
-    "lint:oxlint": "oxlint --type-aware --tsconfig ./tsconfig.oxlint.json ./src ./convex",
+    "lint:oxlint": "oxlint --type-aware --tsconfig ./tsconfig.oxlint.json ./src ./convex ./packages/clawdhub/src",
     "format": "biome format --write ."
   },
   "dependencies": {

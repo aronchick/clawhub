@@ -76,9 +76,7 @@ function Search() {
               <p className="section-subtitle" style={{ margin: 0 }}>
                 {result.skill.summary ?? 'Skill pack'}
               </p>
-              {result.skill.batch === 'highlighted' ? (
-                <div className="tag">Highlighted</div>
-              ) : null}
+              {result.skill.batch === 'highlighted' ? <div className="tag">Highlighted</div> : null}
             </Link>
           ))
         )}
