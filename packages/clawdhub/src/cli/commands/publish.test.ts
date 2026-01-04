@@ -133,22 +133,47 @@ describe('cmdPublish', () => {
     }
   })
 
-  it('requires --changelog when updating an existing skill', async () => {
+  it('allows empty changelog when updating an existing skill', async () => {
     const workdir = await makeTmpWorkdir()
     try {
       const folder = join(workdir, 'existing-skill')
       await mkdir(folder, { recursive: true })
       await writeFile(join(folder, 'SKILL.md'), '# Skill\n', 'utf8')
 
-      mockApiRequest.mockImplementation(async () => ({ skill: { slug: 'existing-skill' } }))
+      let uploadIndex = 0
+      mockApiRequest.mockImplementation(
+        async (_registry: string, args: { method: string; path: string }) => {
+          if (args.method === 'GET' && args.path.startsWith('/api/skill?slug=')) {
+            return { skill: { slug: 'existing-skill' }, latestVersion: { version: '1.0.0' } }
+          }
+          if (args.method === 'POST' && args.path === '/api/cli/upload-url') {
+            uploadIndex += 1
+            return { uploadUrl: `https://upload.example/${uploadIndex}` }
+          }
+          if (args.method === 'POST' && args.path === '/api/cli/publish') {
+            return { ok: true, skillId: 'skill_1', versionId: 'ver_2' }
+          }
+          throw new Error(`Unexpected apiRequest: ${args.method} ${args.path}`)
+        },
+      )
       vi.stubGlobal(
         'fetch',
-        vi.fn(async () => new Response('{}', { status: 200 })) as unknown as typeof fetch,
+        vi.fn(
+          async () => new Response(JSON.stringify({ storageId: 'st_1' }), { status: 200 }),
+        ) as unknown as typeof fetch,
       )
 
-      await expect(
-        cmdPublish(makeOpts(workdir), 'existing-skill', { version: '1.0.0', changelog: '' }),
-      ).rejects.toThrow(/changelog/i)
+      await cmdPublish(makeOpts(workdir), 'existing-skill', {
+        version: '1.0.1',
+        changelog: '',
+        tags: 'latest',
+      })
+
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ path: '/api/cli/publish', method: 'POST' }),
+        expect.anything(),
+      )
     } finally {
       await rm(workdir, { recursive: true, force: true })
     }

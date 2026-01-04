@@ -30,6 +30,7 @@ const skills = defineTable({
   ownerUserId: v.id('users'),
   latestVersionId: v.optional(v.id('skillVersions')),
   tags: v.record(v.string(), v.id('skillVersions')),
+  softDeletedAt: v.optional(v.number()),
   badges: v.object({
     redactionApproved: v.optional(
       v.object({

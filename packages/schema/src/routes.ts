@@ -6,4 +6,6 @@ export const ApiRoutes = {
   cliWhoami: '/api/cli/whoami',
   cliUploadUrl: '/api/cli/upload-url',
   cliPublish: '/api/cli/publish',
+  cliSkillDelete: '/api/cli/skill/delete',
+  cliSkillUndelete: '/api/cli/skill/undelete',
 } as const

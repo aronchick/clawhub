@@ -77,6 +77,13 @@ export declare const ApiCliPublishResponseSchema: import("arktype/internal/varia
     skillId: string;
     versionId: string;
 }, {}>;
+export declare const CliSkillDeleteRequestSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    slug: string;
+}, {}>;
+export type CliSkillDeleteRequest = (typeof CliSkillDeleteRequestSchema)[inferred];
+export declare const ApiCliSkillDeleteResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    ok: true;
+}, {}>;
 export declare const ApiSkillResolveResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
     match: {
         version: string;

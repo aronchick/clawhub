@@ -4,7 +4,6 @@ import {
   ApiCliPublishResponseSchema,
   ApiCliUploadUrlResponseSchema,
   ApiRoutes,
-  ApiSkillMetaResponseSchema,
   ApiUploadFileResponseSchema,
   CliPublishRequestSchema,
   parseArk,
@@ -49,14 +48,6 @@ export async function cmdPublish(
 
   const spinner = createSpinner(`Preparing ${slug}@${version}`)
   try {
-    const meta = await apiRequest(
-      registry,
-      { method: 'GET', path: `/api/skill?slug=${encodeURIComponent(slug)}` },
-      ApiSkillMetaResponseSchema,
-    ).catch(() => null)
-    const exists = Boolean(meta?.skill)
-    if (exists && !changelog.trim()) fail('--changelog required for updates')
-
     const filesOnDisk = await listTextFiles(folder)
     if (filesOnDisk.length === 0) fail('No files found')
     if (

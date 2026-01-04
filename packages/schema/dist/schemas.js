@@ -66,6 +66,12 @@ export const ApiCliPublishResponseSchema = type({
     skillId: 'string',
     versionId: 'string',
 });
+export const CliSkillDeleteRequestSchema = type({
+    slug: 'string',
+});
+export const ApiCliSkillDeleteResponseSchema = type({
+    ok: 'true',
+});
 export const ApiSkillResolveResponseSchema = type({
     match: type({ version: 'string' }).or('null'),
     latestVersion: type({ version: 'string' }).or('null'),

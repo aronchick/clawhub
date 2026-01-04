@@ -58,6 +58,7 @@ export const hydrateResults = internalQuery({
       const embedding = await ctx.db.get(embeddingId)
       if (!embedding) continue
       const skill = await ctx.db.get(embedding.skillId)
+      if (skill?.softDeletedAt) continue
       const version = await ctx.db.get(embedding.versionId)
       entries.push({ embeddingId, skill, version })
     }

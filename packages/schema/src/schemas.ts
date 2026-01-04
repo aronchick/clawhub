@@ -83,6 +83,15 @@ export const ApiCliPublishResponseSchema = type({
   versionId: 'string',
 })
 
+export const CliSkillDeleteRequestSchema = type({
+  slug: 'string',
+})
+export type CliSkillDeleteRequest = (typeof CliSkillDeleteRequestSchema)[inferred]
+
+export const ApiCliSkillDeleteResponseSchema = type({
+  ok: 'true',
+})
+
 export const ApiSkillResolveResponseSchema = type({
   match: type({ version: 'string' }).or('null'),
   latestVersion: type({ version: 'string' }).or('null'),

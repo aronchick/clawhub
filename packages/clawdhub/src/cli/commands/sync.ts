@@ -297,13 +297,12 @@ async function resolvePublishMeta(
   }
 
   const entered = await text({
-    message: `Changelog for ${skill.slug}@${publishVersion}`,
+    message: `Changelog (optional) for ${skill.slug}@${publishVersion}`,
     placeholder: 'What changed?',
-    defaultValue: 'Sync update',
+    defaultValue: '',
   })
   if (isCancel(entered)) fail('Canceled')
   const changelog = String(entered ?? '').trim()
-  if (!changelog) fail('--changelog required for updates')
   return { publishVersion, changelog }
 }
 

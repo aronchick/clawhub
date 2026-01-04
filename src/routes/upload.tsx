@@ -353,7 +353,7 @@ export function Upload() {
               <ul>
                 <li>Include SKILL.md</li>
                 <li>50 MB max per version</li>
-                <li>Changelog required for updates</li>
+                <li>Changelog optional</li>
                 <li>Valid semver version</li>
               </ul>
             </div>

@@ -163,4 +163,174 @@ describe('clawdhub e2e', () => {
       await rm(cfg.dir, { recursive: true, force: true })
     }
   })
+
+  it('publishes, deletes, and undeletes a skill (logged-in)', async () => {
+    const registry = process.env.CLAWDHUB_REGISTRY?.trim() || 'https://clawdhub.com'
+    const site = process.env.CLAWDHUB_SITE?.trim() || 'https://clawdhub.com'
+    const token = mustGetToken() ?? (await readGlobalConfig())?.token ?? null
+    if (!token) {
+      throw new Error('Missing token. Set CLAWDHUB_E2E_TOKEN or run: bun clawdhub auth login')
+    }
+
+    const cfg = await makeTempConfig(registry, token)
+    const workdir = await mkdtemp(join(tmpdir(), 'clawdhub-e2e-publish-'))
+    const slug = `e2e-${Date.now()}`
+    const skillDir = join(workdir, slug)
+
+    try {
+      await mkdir(skillDir, { recursive: true })
+      await writeFile(join(skillDir, 'SKILL.md'), `# ${slug}\n\nHello.\n`, 'utf8')
+
+      const publish1 = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'publish',
+          skillDir,
+          '--slug',
+          slug,
+          '--name',
+          `E2E ${slug}`,
+          '--version',
+          '1.0.0',
+          '--tags',
+          'latest',
+          '--site',
+          site,
+          '--registry',
+          registry,
+          '--workdir',
+          workdir,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(publish1.status).toBe(0)
+      expect(publish1.stderr).not.toMatch(/changelog required/i)
+
+      const publish2 = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'publish',
+          skillDir,
+          '--slug',
+          slug,
+          '--name',
+          `E2E ${slug}`,
+          '--version',
+          '1.0.1',
+          '--tags',
+          'latest',
+          '--site',
+          site,
+          '--registry',
+          registry,
+          '--workdir',
+          workdir,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(publish2.status).toBe(0)
+      expect(publish2.stderr).not.toMatch(/changelog required/i)
+
+      const metaUrl = new URL(ApiRoutes.skill, registry)
+      metaUrl.searchParams.set('slug', slug)
+      const metaRes = await fetch(metaUrl.toString(), { headers: { Accept: 'application/json' } })
+      expect(metaRes.status).toBe(200)
+
+      const del = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'delete',
+          slug,
+          '--yes',
+          '--site',
+          site,
+          '--registry',
+          registry,
+          '--workdir',
+          workdir,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(del.status).toBe(0)
+
+      const metaAfterDelete = await fetch(metaUrl.toString(), {
+        headers: { Accept: 'application/json' },
+      })
+      expect(metaAfterDelete.status).toBe(404)
+
+      const downloadUrl = new URL(ApiRoutes.download, registry)
+      downloadUrl.searchParams.set('slug', slug)
+      downloadUrl.searchParams.set('version', '1.0.1')
+      const downloadAfterDelete = await fetch(downloadUrl.toString())
+      expect(downloadAfterDelete.status).toBe(404)
+
+      const undelete = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'undelete',
+          slug,
+          '--yes',
+          '--site',
+          site,
+          '--registry',
+          registry,
+          '--workdir',
+          workdir,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      expect(undelete.status).toBe(0)
+
+      const metaAfterUndelete = await fetch(metaUrl.toString(), {
+        headers: { Accept: 'application/json' },
+      })
+      expect(metaAfterUndelete.status).toBe(200)
+    } finally {
+      const cleanup = spawnSync(
+        'bun',
+        [
+          'clawdhub',
+          'delete',
+          slug,
+          '--yes',
+          '--site',
+          site,
+          '--registry',
+          registry,
+          '--workdir',
+          workdir,
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, CLAWDHUB_CONFIG_PATH: cfg.path },
+          encoding: 'utf8',
+        },
+      )
+      if (cleanup.status !== 0) {
+        // best-effort cleanup
+      }
+      await rm(workdir, { recursive: true, force: true })
+      await rm(cfg.dir, { recursive: true, force: true })
+    }
+  }, 180_000)
 })

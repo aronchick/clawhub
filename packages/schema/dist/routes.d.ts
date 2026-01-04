@@ -6,4 +6,6 @@ export declare const ApiRoutes: {
     readonly cliWhoami: "/api/cli/whoami";
     readonly cliUploadUrl: "/api/cli/upload-url";
     readonly cliPublish: "/api/cli/publish";
+    readonly cliSkillDelete: "/api/cli/skill/delete";
+    readonly cliSkillUndelete: "/api/cli/skill/undelete";
 };

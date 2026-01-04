@@ -1,4 +1,9 @@
-import { CliPublishRequestSchema, parseArk } from 'clawdhub-schema'
+import {
+  ApiCliSkillDeleteResponseSchema,
+  CliPublishRequestSchema,
+  CliSkillDeleteRequestSchema,
+  parseArk,
+} from 'clawdhub-schema'
 import { api, internal } from './_generated/api'
 import type { Id } from './_generated/dataModel'
 import { httpAction } from './_generated/server'
@@ -188,6 +193,38 @@ async function cliPublishHandler(ctx: HttpCtx, request: Request) {
 
 export const cliPublishHttp = httpAction(cliPublishHandler)
 
+async function cliSkillDeleteHandler(ctx: HttpCtx, request: Request, deleted: boolean) {
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return text('Invalid JSON', 400)
+  }
+
+  try {
+    const { userId } = await requireApiTokenUser(ctx, request)
+    const args = parseArk(CliSkillDeleteRequestSchema, body, 'Delete payload')
+    await ctx.runMutation(internal.skills.setSkillSoftDeletedInternal, {
+      userId,
+      slug: args.slug,
+      deleted,
+    })
+    const ok = parseArk(ApiCliSkillDeleteResponseSchema, { ok: true }, 'Delete response')
+    return json(ok)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Delete failed'
+    if (message.toLowerCase().includes('unauthorized')) return text('Unauthorized', 401)
+    return text(message, 400)
+  }
+}
+
+export const cliSkillDeleteHttp = httpAction((ctx, request) =>
+  cliSkillDeleteHandler(ctx, request, true),
+)
+export const cliSkillUndeleteHttp = httpAction((ctx, request) =>
+  cliSkillDeleteHandler(ctx, request, false),
+)
+
 function json(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {
     status,
@@ -243,4 +280,5 @@ export const __handlers = {
   cliWhoamiHandler,
   cliUploadUrlHandler,
   cliPublishHandler,
+  cliSkillDeleteHandler,
 }

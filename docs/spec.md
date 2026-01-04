@@ -97,7 +97,7 @@ From SKILL.md frontmatter + AgentSkills + Clawdis extensions:
 - Each upload is a new `SkillVersion`.
 - `latest` tag always points to most recent version unless user re-tags.
 - Rollback: move `latest` (and optionally other tags) to an older version.
-- Changelog required for any update.
+- Changelog is optional.
 
 ## Search
 - Vector search over: SKILL.md + other text files + metadata summary.

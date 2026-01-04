@@ -48,7 +48,7 @@ export const getBySlug = query({
       .query('skills')
       .withIndex('by_slug', (q) => q.eq('slug', args.slug))
       .unique()
-    if (!skill) return null
+    if (!skill || skill.softDeletedAt) return null
     const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null
     const owner = await ctx.db.get(skill.ownerUserId)
     return { skill, latestVersion, owner }
@@ -74,21 +74,27 @@ export const list = query({
   handler: async (ctx, args) => {
     const limit = args.limit ?? 24
     if (args.batch) {
-      return ctx.db
+      const entries = await ctx.db
         .query('skills')
         .withIndex('by_batch', (q) => q.eq('batch', args.batch))
         .order('desc')
-        .take(limit)
+        .take(limit * 5)
+      return entries.filter((skill) => !skill.softDeletedAt).slice(0, limit)
     }
     const ownerUserId = args.ownerUserId
     if (ownerUserId) {
-      return ctx.db
+      const entries = await ctx.db
         .query('skills')
         .withIndex('by_owner', (q) => q.eq('ownerUserId', ownerUserId))
         .order('desc')
-        .take(limit)
+        .take(limit * 5)
+      return entries.filter((skill) => !skill.softDeletedAt).slice(0, limit)
     }
-    return ctx.db.query('skills').order('desc').take(limit)
+    const entries = await ctx.db
+      .query('skills')
+      .order('desc')
+      .take(limit * 5)
+    return entries.filter((skill) => !skill.softDeletedAt).slice(0, limit)
   },
 })
 
@@ -164,11 +170,7 @@ export async function publishVersionForUser(
   if (!semver.valid(version)) {
     throw new ConvexError('Version must be valid semver')
   }
-  const existingSkill = await ctx.runQuery(internal.skills.getSkillBySlugInternal, { slug })
   const changelogText = args.changelog.trim()
-  if (existingSkill && !changelogText) {
-    throw new ConvexError('Changelog is required for updates')
-  }
 
   const sanitizedFiles = args.files.map((file) => ({
     ...file,
@@ -418,6 +420,7 @@ export const insertVersion = internalMutation({
         ownerUserId: userId,
         latestVersionId: undefined,
         tags: {},
+        softDeletedAt: undefined,
         badges: { redactionApproved: undefined },
         stats: { downloads: 0, stars: 0, versions: 0, comments: 0 },
         createdAt: now,
@@ -461,6 +464,7 @@ export const insertVersion = internalMutation({
       latestVersionId: versionId,
       tags: nextTags,
       stats: { ...skill.stats, versions: skill.stats.versions + 1 },
+      softDeletedAt: undefined,
       updatedAt: now,
     })
 
@@ -490,6 +494,61 @@ export const insertVersion = internalMutation({
     }
 
     return { skillId: skill._id, versionId, embeddingId }
+  },
+})
+
+export const setSkillSoftDeletedInternal = internalMutation({
+  args: {
+    userId: v.id('users'),
+    slug: v.string(),
+    deleted: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId)
+    if (!user || user.deletedAt) throw new Error('User not found')
+
+    const slug = args.slug.trim().toLowerCase()
+    if (!slug) throw new Error('Slug required')
+
+    const skill = await ctx.db
+      .query('skills')
+      .withIndex('by_slug', (q) => q.eq('slug', slug))
+      .unique()
+    if (!skill) throw new Error('Skill not found')
+
+    if (skill.ownerUserId !== args.userId) {
+      assertRole(user, ['admin', 'moderator'])
+    }
+
+    const now = Date.now()
+    await ctx.db.patch(skill._id, {
+      softDeletedAt: args.deleted ? now : undefined,
+      updatedAt: now,
+    })
+
+    const embeddings = await ctx.db
+      .query('skillEmbeddings')
+      .withIndex('by_skill', (q) => q.eq('skillId', skill._id))
+      .collect()
+    for (const embedding of embeddings) {
+      await ctx.db.patch(embedding._id, {
+        visibility: args.deleted
+          ? 'deleted'
+          : visibilityFor(embedding.isLatest, embedding.isApproved),
+        updatedAt: now,
+      })
+    }
+
+    await ctx.db.insert('auditLogs', {
+      actorUserId: args.userId,
+      action: args.deleted ? 'skill.delete' : 'skill.undelete',
+      targetType: 'skill',
+      targetId: skill._id,
+      metadata: { slug, softDeletedAt: args.deleted ? now : null },
+      createdAt: now,
+    })
+
+    return { ok: true as const }
   },
 })
 

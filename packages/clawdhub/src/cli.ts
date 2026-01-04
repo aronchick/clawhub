@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { Command } from 'commander'
 import { getCliBuildLabel, getCliVersion } from './cli/buildInfo.js'
 import { cmdLoginFlow, cmdLogout, cmdWhoami } from './cli/commands/auth.js'
+import { cmdDeleteSkill, cmdUndeleteSkill } from './cli/commands/delete.js'
 import { cmdPublish } from './cli/commands/publish.js'
 import { cmdInstall, cmdList, cmdSearch, cmdUpdate } from './cli/commands/skills.js'
 import { cmdSync } from './cli/commands/sync.js'
@@ -19,7 +20,7 @@ const program = new Command()
       'install, update, search, and publish agent skills.',
     )}`,
   )
-  .version(getCliVersion(), '-V, --version', 'Show version')
+  .version(getCliVersion(), '-V, --cli-version', 'Show CLI version')
   .option('--workdir <dir>', 'Working directory (default: cwd)')
   .option('--dir <dir>', 'Skills directory (relative to workdir, default: skills)')
   .option('--site <url>', 'Site base URL (for browser login)')
@@ -159,6 +160,26 @@ program
   .action(async (folder, options) => {
     const opts = resolveGlobalOpts()
     await cmdPublish(opts, folder, options)
+  })
+
+program
+  .command('delete')
+  .description('Soft-delete a skill (owner/admin only)')
+  .argument('<slug>', 'Skill slug')
+  .option('--yes', 'Skip confirmation')
+  .action(async (slug, options) => {
+    const opts = resolveGlobalOpts()
+    await cmdDeleteSkill(opts, slug, options, isInputAllowed())
+  })
+
+program
+  .command('undelete')
+  .description('Restore a soft-deleted skill (owner/admin only)')
+  .argument('<slug>', 'Skill slug')
+  .option('--yes', 'Skip confirmation')
+  .action(async (slug, options) => {
+    const opts = resolveGlobalOpts()
+    await cmdUndeleteSkill(opts, slug, options, isInputAllowed())
   })
 
 program
