@@ -6,4 +6,4 @@
 - [x] ~~Proxy `https://clawdhub.com/api/*` to discovered `apiBase` (single-base-URL UX)~~
 - [x] ~~Verify npm name availability (`clawdhub`)~~
 - [x] ~~Update deps to latest (`bun update --latest`)~~
-- [ ] Full gate: `bun run lint`, `bun run test`, `bun run coverage`, `bun run build`, CI green
+- [x] ~~Full gate: `bun run lint`, `bun run test`, `bun run coverage`, `bun run build`, CI green~~
