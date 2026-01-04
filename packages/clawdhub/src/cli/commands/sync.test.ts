@@ -118,4 +118,3 @@ describe('cmdSync', () => {
     expect(String(dryRunOutro)).toMatch(/Dry run: would upload 2 skill/)
   })
 })
-
