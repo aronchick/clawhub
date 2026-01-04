@@ -1,9 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { type GlobalConfig, GlobalConfigSchema, parseArk } from '@clawdhub/schema'
 
 export function getGlobalConfigPath() {
+  const override = process.env.CLAWDHUB_CONFIG_PATH?.trim()
+  if (override) return resolve(override)
   const home = homedir()
   if (process.platform === 'darwin') {
     return join(home, 'Library', 'Application Support', 'clawdhub', 'config.json')

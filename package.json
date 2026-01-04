@@ -11,6 +11,7 @@
     "preview": "bun --bun vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vitest run -c vitest.e2e.config.ts",
     "coverage": "vitest run --coverage",
     "convex:deploy": "bunx convex deploy --typecheck=disable --yes",
     "lint": "bun run lint:biome && bun run lint:oxlint",

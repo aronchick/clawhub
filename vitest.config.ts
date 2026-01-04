@@ -5,7 +5,14 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/convex/_generated/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      '**/convex/_generated/**',
+      'e2e/**',
+      '**/*.e2e.test.ts',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
@@ -33,6 +40,7 @@ export default defineConfig({
         'packages/clawdhub/src/config.ts',
         'packages/clawdhub/src/types.ts',
         'packages/schema/dist/',
+        'e2e/**',
       ],
     },
   },
