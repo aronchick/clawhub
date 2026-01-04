@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildEmbeddingText,
+  hashSkillFiles,
   isTextFile,
   parseClawdisMetadata,
   parseFrontmatter,
@@ -85,5 +86,17 @@ describe('skills utils', () => {
       maxChars: 10,
     })
     expect(text.length).toBe(10)
+  })
+
+  it('hashes skill files deterministically', async () => {
+    const a = await hashSkillFiles([
+      { path: 'b.txt', sha256: 'b' },
+      { path: 'a.txt', sha256: 'a' },
+    ])
+    const b = await hashSkillFiles([
+      { path: 'a.txt', sha256: 'a' },
+      { path: 'b.txt', sha256: 'b' },
+    ])
+    expect(a).toBe(b)
   })
 })

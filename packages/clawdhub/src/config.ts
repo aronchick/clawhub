@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-
-type GlobalConfig = { registry: string; token: string }
+import { parseArk } from './shared/ark.js'
+import { type GlobalConfig, GlobalConfigSchema } from './shared/schemas.js'
 
 export function getGlobalConfigPath() {
   const home = homedir()
@@ -22,10 +22,7 @@ export async function readGlobalConfig(): Promise<GlobalConfig | null> {
   try {
     const raw = await readFile(getGlobalConfigPath(), 'utf8')
     const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object') return null
-    const value = parsed as Record<string, unknown>
-    if (typeof value.registry !== 'string' || typeof value.token !== 'string') return null
-    return { registry: value.registry, token: value.token }
+    return parseArk(GlobalConfigSchema, parsed, 'Global config')
   } catch {
     return null
   }

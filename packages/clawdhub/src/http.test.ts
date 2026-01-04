@@ -1,4 +1,6 @@
 /* @vitest-environment node */
+
+import { type } from 'arktype'
 import { describe, expect, it, vi } from 'vitest'
 import { apiRequest, downloadZip } from './http'
 
@@ -9,11 +11,11 @@ describe('apiRequest', () => {
       json: async () => ({ ok: true }),
     })
     vi.stubGlobal('fetch', fetchMock)
-    const result = await apiRequest<{ ok: boolean }>('https://example.com', {
-      method: 'GET',
-      path: '/x',
-      token: 'clh_token',
-    })
+    const result = await apiRequest(
+      'https://example.com',
+      { method: 'GET', path: '/x', token: 'clh_token' },
+      type({ ok: 'boolean' }),
+    )
     expect(result.ok).toBe(true)
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]

@@ -4,7 +4,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
-import { extractZipToDir, listTextFiles, readLockfile, writeLockfile } from './skills'
+import {
+  buildSkillFingerprint,
+  extractZipToDir,
+  hashSkillFiles,
+  listTextFiles,
+  readLockfile,
+  sha256Hex,
+  writeLockfile,
+} from './skills'
 
 describe('skills', () => {
   it('extracts zip into directory and skips traversal', async () => {
@@ -45,5 +53,17 @@ describe('skills', () => {
     await writeFile(join(workdir, 'node_modules', 'a.txt'), 'no', 'utf8')
     const files = await listTextFiles(workdir)
     expect(files.map((file) => file.relPath)).toEqual(['SKILL.md'])
+  })
+
+  it('hashes skill files deterministically', async () => {
+    const { fingerprint } = hashSkillFiles([
+      { relPath: 'b.txt', bytes: strToU8('b') },
+      { relPath: 'a.txt', bytes: strToU8('a') },
+    ])
+    const expected = buildSkillFingerprint([
+      { path: 'a.txt', sha256: sha256Hex(strToU8('a')) },
+      { path: 'b.txt', sha256: sha256Hex(strToU8('b')) },
+    ])
+    expect(fingerprint).toBe(expected)
   })
 })

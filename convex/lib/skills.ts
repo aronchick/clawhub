@@ -1,31 +1,12 @@
+import { parseArk } from '../../packages/clawdhub/src/shared/ark.js'
+import {
+  type ClawdisSkillMetadata,
+  ClawdisSkillMetadataSchema,
+  type SkillInstallSpec,
+} from '../../packages/clawdhub/src/shared/schemas.js'
+
 export type ParsedSkillFrontmatter = Record<string, string>
-
-export type SkillInstallSpec = {
-  id?: string
-  kind: 'brew' | 'node' | 'go' | 'uv'
-  label?: string
-  bins?: string[]
-  formula?: string
-  tap?: string
-  package?: string
-  module?: string
-}
-
-export type ClawdisSkillMetadata = {
-  always?: boolean
-  skillKey?: string
-  primaryEnv?: string
-  emoji?: string
-  homepage?: string
-  os?: string[]
-  requires?: {
-    bins?: string[]
-    anyBins?: string[]
-    env?: string[]
-    config?: string[]
-  }
-  install?: SkillInstallSpec[]
-}
+export type { ClawdisSkillMetadata, SkillInstallSpec }
 
 const FRONTMATTER_START = '---'
 
@@ -111,25 +92,31 @@ export function parseClawdisMetadata(frontmatter: ParsedSkillFrontmatter) {
       .filter((entry): entry is SkillInstallSpec => Boolean(entry))
     const osRaw = normalizeStringList(clawdisObj.os)
 
-    const metadata: ClawdisSkillMetadata = {
-      always: typeof clawdisObj.always === 'boolean' ? clawdisObj.always : undefined,
-      emoji: typeof clawdisObj.emoji === 'string' ? clawdisObj.emoji : undefined,
-      homepage: typeof clawdisObj.homepage === 'string' ? clawdisObj.homepage : undefined,
-      skillKey: typeof clawdisObj.skillKey === 'string' ? clawdisObj.skillKey : undefined,
-      primaryEnv: typeof clawdisObj.primaryEnv === 'string' ? clawdisObj.primaryEnv : undefined,
-      os: osRaw.length > 0 ? osRaw : undefined,
-      requires: requiresRaw
-        ? {
-            bins: normalizeStringList(requiresRaw.bins),
-            anyBins: normalizeStringList(requiresRaw.anyBins),
-            env: normalizeStringList(requiresRaw.env),
-            config: normalizeStringList(requiresRaw.config),
-          }
-        : undefined,
-      install: install.length > 0 ? install : undefined,
+    const metadata: ClawdisSkillMetadata = {}
+    if (typeof clawdisObj.always === 'boolean') metadata.always = clawdisObj.always
+    if (typeof clawdisObj.emoji === 'string') metadata.emoji = clawdisObj.emoji
+    if (typeof clawdisObj.homepage === 'string') metadata.homepage = clawdisObj.homepage
+    if (typeof clawdisObj.skillKey === 'string') metadata.skillKey = clawdisObj.skillKey
+    if (typeof clawdisObj.primaryEnv === 'string') metadata.primaryEnv = clawdisObj.primaryEnv
+    if (osRaw.length > 0) metadata.os = osRaw
+
+    if (requiresRaw) {
+      const bins = normalizeStringList(requiresRaw.bins)
+      const anyBins = normalizeStringList(requiresRaw.anyBins)
+      const env = normalizeStringList(requiresRaw.env)
+      const config = normalizeStringList(requiresRaw.config)
+      if (bins.length || anyBins.length || env.length || config.length) {
+        metadata.requires = {}
+        if (bins.length) metadata.requires.bins = bins
+        if (anyBins.length) metadata.requires.anyBins = anyBins
+        if (env.length) metadata.requires.env = env
+        if (config.length) metadata.requires.config = config
+      }
     }
 
-    return metadata
+    if (install.length > 0) metadata.install = install
+
+    return parseArk(ClawdisSkillMetadataSchema, metadata, 'Clawdis metadata')
   } catch {
     return undefined
   }
@@ -190,6 +177,18 @@ export function buildEmbeddingText(params: {
   return raw.slice(0, maxChars)
 }
 
+const encoder = new TextEncoder()
+
+export async function hashSkillFiles(files: Array<{ path: string; sha256: string }>) {
+  const normalized = files
+    .filter((file) => Boolean(file.path) && Boolean(file.sha256))
+    .map((file) => ({ path: file.path, sha256: file.sha256 }))
+    .sort((a, b) => a.path.localeCompare(b.path))
+  const payload = normalized.map((file) => `${file.path}:${file.sha256}`).join('\n')
+  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(payload))
+  return toHex(new Uint8Array(digest))
+}
+
 function stripQuotes(value: string) {
   if (
     (value.startsWith('"') && value.endsWith('"')) ||
@@ -232,4 +231,10 @@ function parseInstallSpec(input: unknown): SkillInstallSpec | undefined {
   if (typeof raw.package === 'string') spec.package = raw.package
   if (typeof raw.module === 'string') spec.module = raw.module
   return spec
+}
+
+function toHex(bytes: Uint8Array) {
+  let out = ''
+  for (const byte of bytes) out += byte.toString(16).padStart(2, '0')
+  return out
 }

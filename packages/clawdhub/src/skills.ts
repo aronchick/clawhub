@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { unzipSync } from 'fflate'
-import type { Lockfile } from './types.js'
+import { parseArk } from './shared/ark.js'
+import { type Lockfile, LockfileSchema } from './shared/schemas.js'
 
 const TEXT_EXTENSIONS = new Set([
   'md',
@@ -70,15 +72,36 @@ export async function listTextFiles(root: string) {
   return files
 }
 
+export type SkillFileHash = { path: string; sha256: string; size: number }
+
+export function sha256Hex(bytes: Uint8Array) {
+  return createHash('sha256').update(bytes).digest('hex')
+}
+
+export function buildSkillFingerprint(files: Array<{ path: string; sha256: string }>) {
+  const normalized = files
+    .filter((file) => Boolean(file.path) && Boolean(file.sha256))
+    .map((file) => ({ path: file.path, sha256: file.sha256 }))
+    .sort((a, b) => a.path.localeCompare(b.path))
+  const payload = normalized.map((file) => `${file.path}:${file.sha256}`).join('\n')
+  return createHash('sha256').update(payload).digest('hex')
+}
+
+export function hashSkillFiles(files: Array<{ relPath: string; bytes: Uint8Array }>) {
+  const hashed = files.map((file) => ({
+    path: file.relPath,
+    sha256: sha256Hex(file.bytes),
+    size: file.bytes.byteLength,
+  }))
+  return { files: hashed, fingerprint: buildSkillFingerprint(hashed) }
+}
+
 export async function readLockfile(workdir: string): Promise<Lockfile> {
   const path = join(workdir, '.clawdhub', 'lock.json')
   try {
     const raw = await readFile(path, 'utf8')
     const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object') throw new Error('invalid')
-    const value = parsed as Lockfile
-    if (!value.skills || typeof value.skills !== 'object') throw new Error('invalid')
-    return value
+    return parseArk(LockfileSchema, parsed, 'Lockfile')
   } catch {
     return { version: 1, skills: {} }
   }

@@ -6,6 +6,7 @@ import {
   cliUploadUrlHttp,
   cliWhoamiHttp,
   getSkillHttp,
+  resolveSkillVersionHttp,
   searchSkillsHttp,
 } from './httpApi'
 
@@ -29,6 +30,12 @@ http.route({
   path: '/api/skill',
   method: 'GET',
   handler: getSkillHttp,
+})
+
+http.route({
+  path: '/api/skill/resolve',
+  method: 'GET',
+  handler: resolveSkillVersionHttp,
 })
 
 http.route({

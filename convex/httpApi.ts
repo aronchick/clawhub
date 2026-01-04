@@ -1,7 +1,10 @@
+import { parseArk } from '../packages/clawdhub/src/shared/ark.js'
+import { CliPublishRequestSchema } from '../packages/clawdhub/src/shared/schemas.js'
 import { api, internal } from './_generated/api'
 import type { Id } from './_generated/dataModel'
 import { httpAction } from './_generated/server'
 import { requireApiTokenUser } from './lib/apiTokenAuth'
+import { hashSkillFiles } from './lib/skills'
 import { publishVersionForUser } from './skills'
 
 type HttpCtx = {
@@ -23,6 +26,7 @@ type SearchSkillEntry = {
 
 type GetBySlugResult = {
   skill: {
+    _id: Id<'skills'>
     slug: string
     displayName: string
     summary?: string
@@ -99,6 +103,38 @@ async function getSkillHandler(ctx: HttpCtx, request: Request) {
 }
 
 export const getSkillHttp = httpAction(getSkillHandler)
+
+async function resolveSkillVersionHandler(ctx: HttpCtx, request: Request) {
+  const url = new URL(request.url)
+  const slug = url.searchParams.get('slug')?.trim().toLowerCase()
+  const hash = url.searchParams.get('hash')?.trim().toLowerCase()
+  if (!slug || !hash) return text('Missing slug or hash', 400)
+  if (!/^[a-f0-9]{64}$/.test(hash)) return text('Invalid hash', 400)
+
+  const result = (await ctx.runQuery(api.skills.getBySlug, { slug })) as GetBySlugResult
+  if (!result?.skill) return text('Skill not found', 404)
+
+  const versions = (await ctx.runQuery(api.skills.listVersions, {
+    skillId: result.skill._id,
+    limit: 200,
+  })) as Array<{ version: string; files: Array<{ path: string; sha256: string }> }>
+  let match: { version: string } | null = null
+  for (const version of versions) {
+    const fingerprint = await hashSkillFiles(version.files)
+    if (fingerprint === hash) {
+      match = { version: version.version }
+      break
+    }
+  }
+
+  return json({
+    slug,
+    match,
+    latestVersion: result.latestVersion ? { version: result.latestVersion.version } : null,
+  })
+}
+
+export const resolveSkillVersionHttp = httpAction(resolveSkillVersionHandler)
 
 async function cliWhoamiHandler(ctx: HttpCtx, request: Request) {
   try {
@@ -180,45 +216,20 @@ function toOptionalNumber(value: string | null) {
 }
 
 function parsePublishBody(body: unknown) {
-  if (!body || typeof body !== 'object') throw new Error('Invalid publish payload')
-  const value = body as Record<string, unknown>
-  const slug = stringField(value, 'slug')
-  const displayName = stringField(value, 'displayName')
-  const version = stringField(value, 'version')
-  const changelog = stringField(value, 'changelog')
-  const tagsRaw = value.tags
-  const tags =
-    Array.isArray(tagsRaw) && tagsRaw.every((tag) => typeof tag === 'string')
-      ? (tagsRaw as string[])
-      : undefined
-  const filesRaw = value.files
-  if (!Array.isArray(filesRaw) || filesRaw.length === 0) throw new Error('files required')
-
-  const files = filesRaw.map((raw) => {
-    if (!raw || typeof raw !== 'object') throw new Error('Invalid file entry')
-    const file = raw as Record<string, unknown>
-    const path = stringField(file, 'path')
-    const size = numberField(file, 'size')
-    const storageId = stringField(file, 'storageId') as Id<'_storage'>
-    const sha256 = stringField(file, 'sha256')
-    const contentType =
-      typeof file.contentType === 'string' ? (file.contentType as string) : undefined
-    return { path, size, storageId, sha256, contentType }
-  })
-
-  return { slug, displayName, version, changelog, tags, files }
-}
-
-function stringField(obj: Record<string, unknown>, key: string) {
-  const value = obj[key]
-  if (typeof value !== 'string' || !value.trim()) throw new Error(`${key} required`)
-  return value
-}
-
-function numberField(obj: Record<string, unknown>, key: string) {
-  const value = obj[key]
-  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${key} must be number`)
-  return value
+  const parsed = parseArk(CliPublishRequestSchema, body, 'Publish payload')
+  if (parsed.files.length === 0) throw new Error('files required')
+  const tags = parsed.tags && parsed.tags.length > 0 ? parsed.tags : undefined
+  return {
+    slug: parsed.slug,
+    displayName: parsed.displayName,
+    version: parsed.version,
+    changelog: parsed.changelog,
+    tags,
+    files: parsed.files.map((file) => ({
+      ...file,
+      storageId: file.storageId as Id<'_storage'>,
+    })),
+  }
 }
 
 export const __test = {
@@ -229,6 +240,7 @@ export const __test = {
 export const __handlers = {
   searchSkillsHandler,
   getSkillHandler,
+  resolveSkillVersionHandler,
   cliWhoamiHandler,
   cliUploadUrlHandler,
   cliPublishHandler,

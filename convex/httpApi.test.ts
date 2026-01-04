@@ -26,7 +26,7 @@ describe('httpApi', () => {
   })
 
   it('rejects invalid publish payloads', () => {
-    expect(() => __test.parsePublishBody(null)).toThrow(/Invalid publish payload/i)
+    expect(() => __test.parsePublishBody(null)).toThrow(/Publish payload/i)
     expect(() =>
       __test.parsePublishBody({
         slug: 'x',

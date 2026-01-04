@@ -12,6 +12,7 @@ vi.mock('./skills', () => ({
 const { requireApiTokenUser } = await import('./lib/apiTokenAuth')
 const { publishVersionForUser } = await import('./skills')
 const { __handlers } = await import('./httpApi')
+const { hashSkillFiles } = await import('./lib/skills')
 
 describe('httpApi handlers', () => {
   afterEach(() => {
@@ -90,6 +91,54 @@ describe('httpApi handlers', () => {
     expect(json.skill.slug).toBe('demo')
     expect(json.latestVersion.version).toBe('1.0.0')
     expect(json.owner.handle).toBe('p')
+  })
+
+  it('resolveSkillVersionHttp validates hash', async () => {
+    const response = await __handlers.resolveSkillVersionHandler(
+      { runQuery: vi.fn() },
+      new Request('https://example.com/api/skill/resolve?slug=demo&hash=bad'),
+    )
+    expect(response.status).toBe(400)
+  })
+
+  it('resolveSkillVersionHttp returns 404 when missing', async () => {
+    const runQuery = vi.fn().mockResolvedValue(null)
+    const response = await __handlers.resolveSkillVersionHandler(
+      { runQuery },
+      new Request(
+        'https://example.com/api/skill/resolve?slug=missing&hash=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ),
+    )
+    expect(response.status).toBe(404)
+  })
+
+  it('resolveSkillVersionHttp returns match and latestVersion', async () => {
+    const matchHash = await hashSkillFiles([{ path: 'SKILL.md', sha256: 'abc' }])
+    const runQuery = vi
+      .fn()
+      .mockResolvedValueOnce({
+        skill: {
+          _id: 's',
+          slug: 'demo',
+          displayName: 'Demo',
+          tags: {},
+          stats: {},
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        latestVersion: { version: '2.0.0', createdAt: 3, changelog: 'c' },
+        owner: null,
+      })
+      .mockResolvedValueOnce([{ version: '1.0.0', files: [{ path: 'SKILL.md', sha256: 'abc' }] }])
+
+    const response = await __handlers.resolveSkillVersionHandler(
+      { runQuery },
+      new Request(`https://example.com/api/skill/resolve?slug=demo&hash=${matchHash}`),
+    )
+    expect(response.status).toBe(200)
+    const json = await response.json()
+    expect(json.match.version).toBe('1.0.0')
+    expect(json.latestVersion.version).toBe('2.0.0')
   })
 
   it('cliWhoamiHttp returns 401 on auth failure', async () => {
