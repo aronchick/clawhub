@@ -11,14 +11,15 @@ vi.mock('../../config.js', () => ({
   readGlobalConfig: vi.fn(async () => ({ registry: 'https://clawdhub.com', token: 'tkn' })),
 }))
 
-const mockGetRegistry = vi.fn(async () => 'https://clawdhub.com')
+const mockGetRegistry = vi.fn(async (_opts: unknown, _params?: unknown) => 'https://clawdhub.com')
 vi.mock('../registry.js', () => ({
-  getRegistry: (...args: unknown[]) => mockGetRegistry(...args),
+  getRegistry: (opts: unknown, params?: unknown) => mockGetRegistry(opts, params),
 }))
 
 const mockApiRequest = vi.fn()
 vi.mock('../../http.js', () => ({
-  apiRequest: (...args: unknown[]) => mockApiRequest(...args),
+  apiRequest: (registry: unknown, args: unknown, schema?: unknown) =>
+    mockApiRequest(registry, args, schema),
 }))
 
 const mockFail = vi.fn((message: string) => {
@@ -27,7 +28,7 @@ const mockFail = vi.fn((message: string) => {
 const mockSpinner = { text: '', succeed: vi.fn(), fail: vi.fn() }
 vi.mock('../ui.js', () => ({
   createSpinner: vi.fn(() => mockSpinner),
-  fail: (...args: unknown[]) => mockFail(...args),
+  fail: (message: string) => mockFail(message),
   formatError: (error: unknown) => (error instanceof Error ? error.message : String(error)),
 }))
 
