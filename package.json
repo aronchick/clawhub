@@ -19,8 +19,8 @@
     "format": "biome format --write ."
   },
   "dependencies": {
+    "@auth/core": "^0.34.3",
     "@clawdhub/schema": "^0.1.0",
-    "@auth/core": "^0.41.1",
     "@convex-dev/auth": "^0.0.90",
     "@fontsource/bricolage-grotesque": "^5.2.10",
     "@fontsource/ibm-plex-mono": "^5.2.7",

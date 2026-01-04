@@ -19,8 +19,8 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@clawdhub/schema": "^0.1.0",
     "@clack/prompts": "^0.11.0",
+    "@clawdhub/schema": "^0.1.0",
     "commander": "^14.0.2",
     "fflate": "^0.8.2",
     "ignore": "^7.0.5",
