@@ -1,7 +1,11 @@
 /* @vitest-environment node */
 
 import { describe, expect, it } from 'vitest'
-import { buildCliAuthUrl, isAllowedLoopbackRedirectUri, startLoopbackAuthServer } from './browserAuth'
+import {
+  buildCliAuthUrl,
+  isAllowedLoopbackRedirectUri,
+  startLoopbackAuthServer,
+} from './browserAuth'
 
 describe('browserAuth', () => {
   it('builds auth url', () => {

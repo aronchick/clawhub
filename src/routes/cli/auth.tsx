@@ -48,7 +48,7 @@ function CliAuth() {
       setStatus(message)
       setToken(null)
     })
-  }, [createToken, isAuthenticated, label, me, redirectUri, registry, safeRedirect])
+  }, [createToken, isAuthenticated, label, me, redirectUri, safeRedirect])
 
   if (!safeRedirect) {
     return (
@@ -123,6 +123,5 @@ function isAllowedRedirectUri(value: string) {
   }
   if (url.protocol !== 'http:') return false
   const host = url.hostname.toLowerCase()
-  return host === '127.0.0.1' || host === 'localhost' || host === '::1'
+  return host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]'
 }
-

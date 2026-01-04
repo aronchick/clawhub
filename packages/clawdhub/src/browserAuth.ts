@@ -6,11 +6,7 @@ export type LoopbackAuthResult = {
   registry?: string
 }
 
-export function buildCliAuthUrl(params: {
-  siteUrl: string
-  redirectUri: string
-  label?: string
-}) {
+export function buildCliAuthUrl(params: { siteUrl: string; redirectUri: string; label?: string }) {
   const url = new URL('/cli/auth', params.siteUrl)
   url.searchParams.set('redirect_uri', params.redirectUri)
   if (params.label) url.searchParams.set('label', params.label)
@@ -26,7 +22,9 @@ export function isAllowedLoopbackRedirectUri(value: string) {
   }
   if (url.protocol !== 'http:') return false
   const host = url.hostname.toLowerCase()
-  if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1') return false
+  if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1' && host !== '[::1]') {
+    return false
+  }
   return true
 }
 
@@ -65,7 +63,10 @@ export async function startLoopbackAuthServer(params?: { timeoutMs?: number }) {
           res.statusCode = 200
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify({ ok: true }))
-          resolveToken?.({ token: token.trim(), registry: typeof registry === 'string' ? registry : undefined })
+          resolveToken?.({
+            token: token.trim(),
+            registry: typeof registry === 'string' ? registry : undefined,
+          })
         } catch (error) {
           res.statusCode = 400
           res.setHeader('Content-Type', 'application/json')

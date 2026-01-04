@@ -17,6 +17,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UHandleRouteImport } from './routes/u/$handle'
 import { Route as SkillsSlugRouteImport } from './routes/skills/$slug'
+import { Route as CliAuthRouteImport } from './routes/cli/auth'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
@@ -58,6 +59,11 @@ const SkillsSlugRoute = SkillsSlugRouteImport.update({
   path: '/skills/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CliAuthRoute = CliAuthRouteImport.update({
+  id: '/cli/auth',
+  path: '/cli/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/cli/auth': typeof CliAuthRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/u/$handle': typeof UHandleRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/cli/auth': typeof CliAuthRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/u/$handle': typeof UHandleRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/stars': typeof StarsRoute
   '/upload': typeof UploadRoute
+  '/cli/auth': typeof CliAuthRoute
   '/skills/$slug': typeof SkillsSlugRoute
   '/u/$handle': typeof UHandleRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stars'
     | '/upload'
+    | '/cli/auth'
     | '/skills/$slug'
     | '/u/$handle'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stars'
     | '/upload'
+    | '/cli/auth'
     | '/skills/$slug'
     | '/u/$handle'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/stars'
     | '/upload'
+    | '/cli/auth'
     | '/skills/$slug'
     | '/u/$handle'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   StarsRoute: typeof StarsRoute
   UploadRoute: typeof UploadRoute
+  CliAuthRoute: typeof CliAuthRoute
   SkillsSlugRoute: typeof SkillsSlugRoute
   UHandleRoute: typeof UHandleRoute
 }
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SkillsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cli/auth': {
+      id: '/cli/auth'
+      path: '/cli/auth'
+      fullPath: '/cli/auth'
+      preLoaderRoute: typeof CliAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   StarsRoute: StarsRoute,
   UploadRoute: UploadRoute,
+  CliAuthRoute: CliAuthRoute,
   SkillsSlugRoute: SkillsSlugRoute,
   UHandleRoute: UHandleRoute,
 }

@@ -4,4 +4,4 @@
 - [x] ~~CLI: prefer stored `registry` from global config for all network commands (deps: none)~~
 - [x] ~~Confirm shared runtime schemas are used across CLI + Convex (`@clawdhub/schema`, `arktype`)~~
 - [x] ~~Dependency audit/update (deps: `@biomejs/biome`, `oxlint`, `vitest`, etc.)~~
-- [ ] Full gate: `bun run lint`, `bun run test`, `bun run coverage`, `bun run build`
+- [x] ~~Full gate: `bun run lint`, `bun run test`, `bun run coverage`, `bun run build`~~

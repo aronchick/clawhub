@@ -19,6 +19,7 @@ import {
 import { Command } from 'commander'
 import ora from 'ora'
 import semver from 'semver'
+import { buildCliAuthUrl, startLoopbackAuthServer } from './browserAuth.js'
 import { getGlobalConfigPath, readGlobalConfig, writeGlobalConfig } from './config.js'
 import { apiRequest, downloadZip } from './http.js'
 import {
@@ -29,7 +30,6 @@ import {
   sha256Hex,
   writeLockfile,
 } from './skills.js'
-import { buildCliAuthUrl, startLoopbackAuthServer } from './browserAuth.js'
 
 type GlobalOpts = {
   workdir: string
@@ -666,7 +666,9 @@ function openInBrowser(url: string) {
       : process.platform === 'win32'
         ? ['cmd', '/c', 'start', '', url]
         : ['xdg-open', url]
-  const child = spawn(args[0]!, args.slice(1), { stdio: 'ignore', detached: true })
+  const [command, ...commandArgs] = args
+  if (!command) return
+  const child = spawn(command, commandArgs, { stdio: 'ignore', detached: true })
   child.unref()
 }
 
