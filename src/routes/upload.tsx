@@ -16,6 +16,7 @@ export function Upload() {
   const { isAuthenticated } = useConvexAuth()
   const generateUploadUrl = useMutation(api.uploads.generateUploadUrl)
   const publishVersion = useAction(api.skills.publishVersion)
+  const generateChangelogPreview = useAction(api.skills.generateChangelogPreview)
   const [hasAttempted, setHasAttempted] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [slug, setSlug] = useState('')
@@ -23,6 +24,13 @@ export function Upload() {
   const [version, setVersion] = useState('1.0.0')
   const [tags, setTags] = useState('latest')
   const [changelog, setChangelog] = useState('')
+  const [changelogStatus, setChangelogStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    'idle',
+  )
+  const [changelogSource, setChangelogSource] = useState<'auto' | 'user' | null>(null)
+  const changelogTouchedRef = useRef(false)
+  const changelogRequestRef = useRef(0)
+  const changelogKeyRef = useRef<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -63,6 +71,61 @@ export function Upload() {
   const trimmedSlug = slug.trim()
   const trimmedName = displayName.trim()
   const trimmedChangelog = changelog.trim()
+
+  useEffect(() => {
+    if (changelogTouchedRef.current) return
+    if (trimmedChangelog) return
+    if (!trimmedSlug || !SLUG_PATTERN.test(trimmedSlug)) return
+    if (!semver.valid(version)) return
+    if (!hasSkillFile) return
+    if (files.length === 0) return
+
+    const skillIndex = normalizedPaths.findIndex((path) => {
+      const lower = path.trim().toLowerCase()
+      return lower === 'skill.md' || lower === 'skills.md'
+    })
+    if (skillIndex < 0) return
+
+    const skillFile = files[skillIndex]
+    if (!skillFile) return
+
+    const key = `${trimmedSlug}:${version}:${skillFile.size}:${skillFile.lastModified}:${normalizedPaths.length}`
+    if (changelogKeyRef.current === key) return
+    changelogKeyRef.current = key
+
+    const requestId = ++changelogRequestRef.current
+    setChangelogStatus('loading')
+
+    void readText(skillFile)
+      .then((text) => {
+        if (changelogRequestRef.current !== requestId) return null
+        return generateChangelogPreview({
+          slug: trimmedSlug,
+          version,
+          readmeText: text.slice(0, 20_000),
+          filePaths: normalizedPaths,
+        })
+      })
+      .then((result) => {
+        if (!result) return
+        if (changelogRequestRef.current !== requestId) return
+        setChangelog(result.changelog)
+        setChangelogSource('auto')
+        setChangelogStatus('ready')
+      })
+      .catch(() => {
+        if (changelogRequestRef.current !== requestId) return
+        setChangelogStatus('error')
+      })
+  }, [
+    files,
+    generateChangelogPreview,
+    hasSkillFile,
+    normalizedPaths,
+    trimmedChangelog,
+    trimmedSlug,
+    version,
+  ])
   const parsedTags = useMemo(
     () =>
       tags
@@ -298,12 +361,29 @@ export function Upload() {
               </label>
             </div>
             <label className="upload-field">
-              <span>Changelog</span>
+              <div className="upload-field-header">
+                <span>Changelog</span>
+                {changelogSource === 'auto' ? (
+                  <span className="upload-field-hint">
+                    {changelogStatus === 'loading' ? 'Auto-generating…' : 'Auto-generated'}
+                  </span>
+                ) : changelogStatus === 'error' ? (
+                  <span className="upload-field-hint">Auto-generation failed</span>
+                ) : changelogStatus === 'loading' ? (
+                  <span className="upload-field-hint">Auto-generating…</span>
+                ) : null}
+              </div>
               <textarea
                 className="search-input upload-input"
                 rows={4}
                 value={changelog}
-                onChange={(event) => setChangelog(event.target.value)}
+                onChange={(event) => {
+                  changelogTouchedRef.current = true
+                  changelogRequestRef.current += 1
+                  setChangelogSource('user')
+                  setChangelogStatus('idle')
+                  setChangelog(event.target.value)
+                }}
                 placeholder="What changed in this version?"
               />
             </label>
@@ -475,4 +555,11 @@ function isTextFile(file: File) {
   if (file.type && isTextContentType(file.type)) return true
   if (extension && TEXT_FILE_EXTENSION_SET.has(extension)) return true
   return false
+}
+
+async function readText(blob: Blob) {
+  if (typeof (blob as Blob & { text?: unknown }).text === 'function') {
+    return (blob as Blob & { text: () => Promise<string> }).text()
+  }
+  return new Response(blob as BodyInit).text()
 }

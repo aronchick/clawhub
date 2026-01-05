@@ -6,16 +6,11 @@ import {
 } from 'clawdhub-schema'
 import { api, internal } from './_generated/api'
 import type { Id } from './_generated/dataModel'
+import type { ActionCtx } from './_generated/server'
 import { httpAction } from './_generated/server'
 import { requireApiTokenUser } from './lib/apiTokenAuth'
 import { hashSkillFiles } from './lib/skills'
 import { publishVersionForUser } from './skills'
-
-type HttpCtx = {
-  runAction: (fn: unknown, args: unknown) => Promise<unknown>
-  runQuery: (fn: unknown, args: unknown) => Promise<unknown>
-  runMutation: (fn: unknown, args: unknown) => Promise<unknown>
-}
 
 type SearchSkillEntry = {
   score: number
@@ -43,7 +38,7 @@ type GetBySlugResult = {
   owner: { handle?: string; displayName?: string; image?: string } | null
 } | null
 
-async function searchSkillsHandler(ctx: HttpCtx, request: Request) {
+async function searchSkillsHandler(ctx: ActionCtx, request: Request) {
   const url = new URL(request.url)
   const query = url.searchParams.get('q')?.trim() ?? ''
   const limit = toOptionalNumber(url.searchParams.get('limit'))
@@ -71,7 +66,7 @@ async function searchSkillsHandler(ctx: HttpCtx, request: Request) {
 
 export const searchSkillsHttp = httpAction(searchSkillsHandler)
 
-async function getSkillHandler(ctx: HttpCtx, request: Request) {
+async function getSkillHandler(ctx: ActionCtx, request: Request) {
   const url = new URL(request.url)
   const slug = url.searchParams.get('slug')?.trim().toLowerCase()
   if (!slug) return text('Missing slug', 400)
@@ -108,7 +103,7 @@ async function getSkillHandler(ctx: HttpCtx, request: Request) {
 
 export const getSkillHttp = httpAction(getSkillHandler)
 
-async function resolveSkillVersionHandler(ctx: HttpCtx, request: Request) {
+async function resolveSkillVersionHandler(ctx: ActionCtx, request: Request) {
   const url = new URL(request.url)
   const slug = url.searchParams.get('slug')?.trim().toLowerCase()
   const hash = url.searchParams.get('hash')?.trim().toLowerCase()
@@ -140,7 +135,7 @@ async function resolveSkillVersionHandler(ctx: HttpCtx, request: Request) {
 
 export const resolveSkillVersionHttp = httpAction(resolveSkillVersionHandler)
 
-async function cliWhoamiHandler(ctx: HttpCtx, request: Request) {
+async function cliWhoamiHandler(ctx: ActionCtx, request: Request) {
   try {
     const { user } = await requireApiTokenUser(ctx, request)
     return json({
@@ -157,7 +152,7 @@ async function cliWhoamiHandler(ctx: HttpCtx, request: Request) {
 
 export const cliWhoamiHttp = httpAction(cliWhoamiHandler)
 
-async function cliUploadUrlHandler(ctx: HttpCtx, request: Request) {
+async function cliUploadUrlHandler(ctx: ActionCtx, request: Request) {
   try {
     const { userId } = await requireApiTokenUser(ctx, request)
     const uploadUrl = await ctx.runMutation(internal.uploads.generateUploadUrlForUserInternal, {
@@ -171,7 +166,7 @@ async function cliUploadUrlHandler(ctx: HttpCtx, request: Request) {
 
 export const cliUploadUrlHttp = httpAction(cliUploadUrlHandler)
 
-async function cliPublishHandler(ctx: HttpCtx, request: Request) {
+async function cliPublishHandler(ctx: ActionCtx, request: Request) {
   let body: unknown
   try {
     body = await request.json()
@@ -193,7 +188,7 @@ async function cliPublishHandler(ctx: HttpCtx, request: Request) {
 
 export const cliPublishHttp = httpAction(cliPublishHandler)
 
-async function cliSkillDeleteHandler(ctx: HttpCtx, request: Request, deleted: boolean) {
+async function cliSkillDeleteHandler(ctx: ActionCtx, request: Request, deleted: boolean) {
   let body: unknown
   try {
     body = await request.json()

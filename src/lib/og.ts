@@ -52,8 +52,7 @@ export function buildSkillMeta(source: SkillMetaSource): SkillMeta {
   const summary = clean(source.summary)
   const title = `${displayName} — ClawdHub`
   const description =
-    summary ||
-    (owner ? `Agent skill by @${owner} on ClawdHub.` : DEFAULT_DESCRIPTION)
+    summary || (owner ? `Agent skill by @${owner} on ClawdHub.` : DEFAULT_DESCRIPTION)
   const url = owner ? `${siteUrl}/${owner}/${source.slug}` : `${siteUrl}/skills/${source.slug}`
   return {
     title,

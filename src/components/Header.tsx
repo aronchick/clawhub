@@ -30,16 +30,29 @@ export default function Header() {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <Link to="/" search={{}} className="brand">
+        <Link to="/" search={{ q: undefined, highlighted: undefined }} className="brand">
           <span className="brand-mark">
             <img src="/clawd-logo.png" alt="" aria-hidden="true" />
           </span>
           ClawdHub
         </Link>
         <nav className="nav-links">
-          <Link to="/skills">Skills</Link>
+          <Link
+            to="/skills"
+            search={{
+              q: undefined,
+              sort: undefined,
+              dir: undefined,
+              highlighted: undefined,
+              view: undefined,
+            }}
+          >
+            Skills
+          </Link>
           <Link to="/upload">Upload</Link>
-          <Link to="/search">Search</Link>
+          <Link to="/search" search={{ q: undefined, highlighted: undefined }}>
+            Search
+          </Link>
           {me ? <Link to="/stars">Stars</Link> : null}
           {me?.role === 'admin' || me?.role === 'moderator' ? <Link to="/admin">Admin</Link> : null}
         </nav>

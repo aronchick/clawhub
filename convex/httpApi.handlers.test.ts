@@ -14,6 +14,10 @@ const { publishVersionForUser } = await import('./skills')
 const { __handlers } = await import('./httpApi')
 const { hashSkillFiles } = await import('./lib/skills')
 
+function makeCtx(partial: Record<string, unknown>) {
+  return partial as unknown as import('./_generated/server').ActionCtx
+}
+
 describe('httpApi handlers', () => {
   afterEach(() => {
     vi.mocked(requireApiTokenUser).mockReset()
@@ -22,7 +26,7 @@ describe('httpApi handlers', () => {
 
   it('searchSkillsHttp returns empty results for empty query', async () => {
     const response = await __handlers.searchSkillsHandler(
-      { runAction: vi.fn() },
+      makeCtx({ runAction: vi.fn() }),
       new Request('https://example.com/api/search?q=%20%20'),
     )
     expect(response.status).toBe(200)
@@ -38,7 +42,7 @@ describe('httpApi handlers', () => {
       },
     ])
     const response = await __handlers.searchSkillsHandler(
-      { runAction },
+      makeCtx({ runAction }),
       new Request('https://example.com/api/search?q=test&approvedOnly=true&limit=5'),
     )
     expect(runAction).toHaveBeenCalledWith(expect.anything(), {
@@ -53,7 +57,7 @@ describe('httpApi handlers', () => {
 
   it('getSkillHttp validates slug', async () => {
     const response = await __handlers.getSkillHandler(
-      { runQuery: vi.fn() },
+      makeCtx({ runQuery: vi.fn() }),
       new Request('https://example.com/api/skill'),
     )
     expect(response.status).toBe(400)
@@ -62,7 +66,7 @@ describe('httpApi handlers', () => {
   it('getSkillHttp returns 404 when missing', async () => {
     const runQuery = vi.fn().mockResolvedValue(null)
     const response = await __handlers.getSkillHandler(
-      { runQuery },
+      makeCtx({ runQuery }),
       new Request('https://example.com/api/skill?slug=missing'),
     )
     expect(response.status).toBe(404)
@@ -83,7 +87,7 @@ describe('httpApi handlers', () => {
       owner: { handle: 'p', displayName: 'Peter', image: null },
     })
     const response = await __handlers.getSkillHandler(
-      { runQuery },
+      makeCtx({ runQuery }),
       new Request('https://example.com/api/skill?slug=demo'),
     )
     expect(response.status).toBe(200)
@@ -95,7 +99,7 @@ describe('httpApi handlers', () => {
 
   it('resolveSkillVersionHttp validates hash', async () => {
     const response = await __handlers.resolveSkillVersionHandler(
-      { runQuery: vi.fn() },
+      makeCtx({ runQuery: vi.fn() }),
       new Request('https://example.com/api/skill/resolve?slug=demo&hash=bad'),
     )
     expect(response.status).toBe(400)
@@ -104,7 +108,7 @@ describe('httpApi handlers', () => {
   it('resolveSkillVersionHttp returns 404 when missing', async () => {
     const runQuery = vi.fn().mockResolvedValue(null)
     const response = await __handlers.resolveSkillVersionHandler(
-      { runQuery },
+      makeCtx({ runQuery }),
       new Request(
         'https://example.com/api/skill/resolve?slug=missing&hash=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       ),
@@ -132,7 +136,7 @@ describe('httpApi handlers', () => {
       .mockResolvedValueOnce([{ version: '1.0.0', files: [{ path: 'SKILL.md', sha256: 'abc' }] }])
 
     const response = await __handlers.resolveSkillVersionHandler(
-      { runQuery },
+      makeCtx({ runQuery }),
       new Request(`https://example.com/api/skill/resolve?slug=demo&hash=${matchHash}`),
     )
     expect(response.status).toBe(200)
@@ -144,7 +148,7 @@ describe('httpApi handlers', () => {
   it('cliWhoamiHttp returns 401 on auth failure', async () => {
     vi.mocked(requireApiTokenUser).mockRejectedValueOnce(new Error('Unauthorized'))
     const response = await __handlers.cliWhoamiHandler(
-      {} as unknown,
+      makeCtx({}),
       new Request('https://x/api/cli/whoami'),
     )
     expect(response.status).toBe(401)
@@ -155,7 +159,7 @@ describe('httpApi handlers', () => {
       user: { handle: 'p', displayName: 'Peter', image: 'x' },
     } as never)
     const response = await __handlers.cliWhoamiHandler(
-      {} as unknown,
+      makeCtx({}),
       new Request('https://x/api/cli/whoami'),
     )
     expect(response.status).toBe(200)
@@ -167,7 +171,7 @@ describe('httpApi handlers', () => {
     vi.mocked(requireApiTokenUser).mockResolvedValueOnce({ userId: 'user1' } as never)
     const runMutation = vi.fn().mockResolvedValue('https://upload.local')
     const response = await __handlers.cliUploadUrlHandler(
-      { runMutation } as unknown,
+      makeCtx({ runMutation }),
       new Request('https://x/api/cli/upload-url', { method: 'POST' }),
     )
     expect(response.status).toBe(200)
@@ -177,7 +181,7 @@ describe('httpApi handlers', () => {
   it('cliUploadUrlHttp returns 401 when unauthorized', async () => {
     vi.mocked(requireApiTokenUser).mockRejectedValueOnce(new Error('Unauthorized'))
     const response = await __handlers.cliUploadUrlHandler(
-      {} as unknown,
+      makeCtx({}),
       new Request('https://x/api/cli/upload-url', { method: 'POST' }),
     )
     expect(response.status).toBe(401)
@@ -185,7 +189,7 @@ describe('httpApi handlers', () => {
 
   it('cliPublishHttp returns 400 on invalid json', async () => {
     const request = new Request('https://x/api/cli/publish', { method: 'POST', body: '{' })
-    const response = await __handlers.cliPublishHandler({} as unknown, request)
+    const response = await __handlers.cliPublishHandler(makeCtx({}), request)
     expect(response.status).toBe(400)
   })
 
@@ -196,7 +200,7 @@ describe('httpApi handlers', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     })
-    const response = await __handlers.cliPublishHandler({} as unknown, request)
+    const response = await __handlers.cliPublishHandler(makeCtx({}), request)
     expect(response.status).toBe(401)
   })
 
@@ -214,7 +218,7 @@ describe('httpApi handlers', () => {
         files: [{ path: 'SKILL.md', size: 1, storageId: 'id', sha256: 'a' }],
       }),
     })
-    const response = await __handlers.cliPublishHandler({} as unknown, request)
+    const response = await __handlers.cliPublishHandler(makeCtx({}), request)
     expect(response.status).toBe(400)
   })
 
@@ -236,7 +240,7 @@ describe('httpApi handlers', () => {
         files: [{ path: 'SKILL.md', size: 1, storageId: 'id', sha256: 'a' }],
       }),
     })
-    const response = await __handlers.cliPublishHandler({} as unknown, request)
+    const response = await __handlers.cliPublishHandler(makeCtx({}), request)
     expect(response.status).toBe(200)
     const json = await response.json()
     expect(json.ok).toBe(true)
@@ -250,7 +254,7 @@ describe('httpApi handlers', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: 'demo' }),
     })
-    const response = await __handlers.cliSkillDeleteHandler({} as never, request, true)
+    const response = await __handlers.cliSkillDeleteHandler(makeCtx({}), request, true)
     expect(response.status).toBe(401)
   })
 
@@ -262,7 +266,7 @@ describe('httpApi handlers', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: 'demo' }),
     })
-    const response = await __handlers.cliSkillDeleteHandler({ runMutation } as never, request, true)
+    const response = await __handlers.cliSkillDeleteHandler(makeCtx({ runMutation }), request, true)
     expect(response.status).toBe(200)
     expect(runMutation).toHaveBeenCalledWith(expect.anything(), {
       userId: 'user1',
@@ -281,7 +285,7 @@ describe('httpApi handlers', () => {
       body: JSON.stringify({ slug: 'demo' }),
     })
     const response = await __handlers.cliSkillDeleteHandler(
-      { runMutation } as never,
+      makeCtx({ runMutation }),
       request,
       false,
     )
@@ -295,7 +299,7 @@ describe('httpApi handlers', () => {
 
   it('cliSkillDeleteHandler returns 400 on invalid json', async () => {
     const request = new Request('https://x/api/cli/skill/delete', { method: 'POST', body: '{' })
-    const response = await __handlers.cliSkillDeleteHandler({} as never, request, true)
+    const response = await __handlers.cliSkillDeleteHandler(makeCtx({}), request, true)
     expect(response.status).toBe(400)
   })
 
@@ -306,7 +310,7 @@ describe('httpApi handlers', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     })
-    const response = await __handlers.cliSkillDeleteHandler({} as never, request, true)
+    const response = await __handlers.cliSkillDeleteHandler(makeCtx({}), request, true)
     expect(response.status).toBe(400)
   })
 })

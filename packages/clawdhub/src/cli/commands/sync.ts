@@ -1,7 +1,7 @@
 import { realpath } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
-import { intro, isCancel, multiselect, outro, text } from '@clack/prompts'
+import { intro, isCancel, multiselect, outro } from '@clack/prompts'
 import semver from 'semver'
 import { readGlobalConfig } from '../../config.js'
 import { apiRequest, downloadZip } from '../../http.js'
@@ -357,18 +357,7 @@ async function resolvePublishMeta(
   const fromFlag = params.changelogFlag?.trim()
   if (fromFlag) return { publishVersion, changelog: fromFlag }
 
-  if (!params.allowPrompt) {
-    return { publishVersion, changelog: 'Sync update' }
-  }
-
-  const entered = await text({
-    message: `Changelog (optional) for ${skill.slug}@${publishVersion}`,
-    placeholder: 'What changed?',
-    defaultValue: '',
-  })
-  if (isCancel(entered)) fail('Canceled')
-  const changelog = String(entered ?? '').trim()
-  return { publishVersion, changelog }
+  return { publishVersion, changelog: '' }
 }
 
 async function getRegistryWithAuth(opts: GlobalOpts, token: string) {

@@ -58,6 +58,7 @@ const skillVersions = defineTable({
   skillId: v.id('skills'),
   version: v.string(),
   changelog: v.string(),
+  changelogSource: v.optional(v.union(v.literal('auto'), v.literal('user'))),
   files: v.array(
     v.object({
       path: v.string(),

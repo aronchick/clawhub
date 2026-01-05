@@ -15,6 +15,7 @@ import type * as http from "../http.js";
 import type * as httpApi from "../httpApi.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_apiTokenAuth from "../lib/apiTokenAuth.js";
+import type * as lib_changelog from "../lib/changelog.js";
 import type * as lib_embeddings from "../lib/embeddings.js";
 import type * as lib_skills from "../lib/skills.js";
 import type * as lib_tokens from "../lib/tokens.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   httpApi: typeof httpApi;
   "lib/access": typeof lib_access;
   "lib/apiTokenAuth": typeof lib_apiTokenAuth;
+  "lib/changelog": typeof lib_changelog;
   "lib/embeddings": typeof lib_embeddings;
   "lib/skills": typeof lib_skills;
   "lib/tokens": typeof lib_tokens;

@@ -323,8 +323,13 @@ export function SkillDetailPage({
                   <div>
                     <div>
                       v{version.version} · {new Date(version.createdAt).toLocaleDateString()}
+                      {version.changelogSource === 'auto' ? (
+                        <span style={{ color: 'var(--ink-soft)' }}> · auto</span>
+                      ) : null}
                     </div>
-                    <div style={{ color: '#5c554e' }}>{version.changelog}</div>
+                    <div style={{ color: '#5c554e', whiteSpace: 'pre-wrap' }}>
+                      {version.changelog}
+                    </div>
                   </div>
                   <a
                     className="btn"

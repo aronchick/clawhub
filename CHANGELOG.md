@@ -6,6 +6,7 @@
 - Web: `/skills` list view with sorting (newest/downloads/stars/name) + quick filter.
 - Web: admin/moderator highlight toggle on skill detail.
 - Web: canonical skill URLs as `/<owner>/<slug>` (legacy `/skills/<slug>` redirects).
+- Web: upload auto-generates a changelog via OpenAI when left blank (marked as auto-generated).
 
 ### Fixed
 - Web: skill detail shows a loading state instead of flashing "Skill not found".
@@ -16,6 +17,7 @@
 
 ### Changed
 - Web: homepage search now expands into full search mode with live results + highlighted toggle.
+- CLI: sync no longer prompts for changelog; registry auto-generates when blank.
 
 ## 0.0.3 - 2026-01-04
 

@@ -5,6 +5,10 @@ import type { Doc, Id } from './_generated/dataModel'
 import type { ActionCtx } from './_generated/server'
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { assertRole, requireUser, requireUserFromAction } from './lib/access'
+import {
+  generateChangelogPreview as buildChangelogPreview,
+  generateChangelogForPublish,
+} from './lib/changelog'
 import { generateEmbedding } from './lib/embeddings'
 import {
   buildEmbeddingText,
@@ -155,6 +159,25 @@ export const publishVersion: ReturnType<typeof action> = action({
   },
 })
 
+export const generateChangelogPreview = action({
+  args: {
+    slug: v.string(),
+    version: v.string(),
+    readmeText: v.string(),
+    filePaths: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    await requireUserFromAction(ctx)
+    const changelog = await buildChangelogPreview(ctx, {
+      slug: args.slug.trim().toLowerCase(),
+      version: args.version.trim(),
+      readmeText: args.readmeText,
+      filePaths: args.filePaths?.map((value) => value.trim()).filter(Boolean),
+    })
+    return { changelog, source: 'auto' as const }
+  },
+})
+
 export async function publishVersionForUser(
   ctx: ActionCtx,
   userId: Id<'users'>,
@@ -170,7 +193,8 @@ export async function publishVersionForUser(
   if (!semver.valid(version)) {
     throw new ConvexError('Version must be valid semver')
   }
-  const changelogText = args.changelog.trim()
+  const suppliedChangelog = args.changelog.trim()
+  const changelogSource = suppliedChangelog ? ('user' as const) : ('auto' as const)
 
   const sanitizedFiles = args.files.map((file) => ({
     ...file,
@@ -214,12 +238,24 @@ export async function publishVersionForUser(
     otherFiles,
   })
 
-  let embedding: number[]
-  try {
-    embedding = await generateEmbedding(embeddingText)
-  } catch (error) {
-    throw new ConvexError(formatEmbeddingError(error))
-  }
+  const changelogPromise =
+    changelogSource === 'user'
+      ? Promise.resolve(suppliedChangelog)
+      : generateChangelogForPublish(ctx, {
+          slug,
+          version,
+          readmeText,
+          files: sanitizedFiles.map((file) => ({ path: file.path ?? '', sha256: file.sha256 })),
+        })
+
+  const embeddingPromise = generateEmbedding(embeddingText)
+
+  const [changelogText, embedding] = await Promise.all([
+    changelogPromise,
+    embeddingPromise.catch((error) => {
+      throw new ConvexError(formatEmbeddingError(error))
+    }),
+  ])
 
   return ctx.runMutation(internal.skills.insertVersion, {
     userId,
@@ -227,6 +263,7 @@ export async function publishVersionForUser(
     displayName,
     version,
     changelog: changelogText,
+    changelogSource,
     tags: args.tags?.map((tag) => tag.trim()).filter(Boolean),
     files: sanitizedFiles.map((file) => ({
       ...file,
@@ -379,6 +416,7 @@ export const insertVersion = internalMutation({
     displayName: v.string(),
     version: v.string(),
     changelog: v.string(),
+    changelogSource: v.optional(v.union(v.literal('auto'), v.literal('user'))),
     tags: v.optional(v.array(v.string())),
     files: v.array(
       v.object({
@@ -443,6 +481,7 @@ export const insertVersion = internalMutation({
       skillId: skill._id,
       version: args.version,
       changelog: args.changelog,
+      changelogSource: args.changelogSource,
       files: args.files,
       parsed: args.parsed,
       createdBy: userId,
