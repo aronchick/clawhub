@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { isTextContentType, TEXT_FILE_EXTENSION_SET } from 'clawdhub-schema'
-import { useAction, useConvexAuth, useMutation } from 'convex/react'
+import { useAction, useConvexAuth, useMutation, useQuery } from 'convex/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import semver from 'semver'
 import { api } from '../../convex/_generated/api'
@@ -9,18 +9,39 @@ import { expandFiles } from '../lib/uploadFiles'
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 export const Route = createFileRoute('/upload')({
+  validateSearch: (search) => ({
+    updateSlug: typeof search.updateSlug === 'string' ? search.updateSlug : undefined,
+  }),
   component: Upload,
 })
 
 export function Upload() {
   const { isAuthenticated } = useConvexAuth()
+  const { updateSlug } = useSearch({ from: '/upload' })
   const generateUploadUrl = useMutation(api.uploads.generateUploadUrl)
   const publishVersion = useAction(api.skills.publishVersion)
+  const existingSkill = useQuery(
+    api.skills.getBySlug,
+    updateSlug ? { slug: updateSlug } : 'skip',
+  )
   const [hasAttempted, setHasAttempted] = useState(false)
   const [files, setFiles] = useState<File[]>([])
-  const [slug, setSlug] = useState('')
+  const [slug, setSlug] = useState(updateSlug ?? '')
   const [displayName, setDisplayName] = useState('')
   const [version, setVersion] = useState('1.0.0')
+  const isUpdate = Boolean(updateSlug && existingSkill)
+
+  // Pre-populate form when updating existing skill
+  useEffect(() => {
+    if (existingSkill?.skill && existingSkill?.latestVersion) {
+      setSlug(existingSkill.skill.slug)
+      setDisplayName(existingSkill.skill.displayName)
+      // Bump version automatically
+      const currentVersion = existingSkill.latestVersion.version
+      const nextVersion = semver.inc(currentVersion, 'patch')
+      if (nextVersion) setVersion(nextVersion)
+    }
+  }, [existingSkill])
   const [tags, setTags] = useState('latest')
   const [changelog, setChangelog] = useState('')
   const [status, setStatus] = useState<string | null>(null)
