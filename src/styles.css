@@ -103,13 +103,16 @@ code {
 .site-footer-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 16px;
 }
 
 .site-footer-copy {
   font-size: 0.85rem;
   color: var(--ink-soft);
+  opacity: 0.72;
+  text-align: center;
+  max-width: 720px;
 }
 
 .site-footer-copy a {
