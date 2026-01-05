@@ -2,6 +2,9 @@
 
 ## 0.0.4 - Unreleased
 
+### Added
+- Home: install command switcher (npm/pnpm/bun).
+
 ### Changed
 - CLI sync: default `--concurrency` is now 4 (was 8).
 
