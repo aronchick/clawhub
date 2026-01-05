@@ -5,7 +5,7 @@ import type { GlobalOpts } from '../types'
 
 const mockIntro = vi.fn()
 const mockOutro = vi.fn()
-const mockNote = vi.fn()
+const mockLog = vi.fn()
 const mockMultiselect = vi.fn(async (_args?: unknown) => [] as string[])
 let interactive = false
 
@@ -21,7 +21,6 @@ const defaultFindSkillFolders = async (root: string) => {
 vi.mock('@clack/prompts', () => ({
   intro: (value: string) => mockIntro(value),
   outro: (value: string) => mockOutro(value),
-  note: (message: string, body?: string) => mockNote(message, body),
   multiselect: (args: unknown) => mockMultiselect(args),
   text: vi.fn(async () => ''),
   isCancel: () => false,
@@ -90,6 +89,10 @@ afterEach(async () => {
   vi.mocked(findSkillFolders).mockImplementation(defaultFindSkillFolders)
 })
 
+vi.spyOn(console, 'log').mockImplementation((...args) => {
+  mockLog(args.map(String).join(' '))
+})
+
 describe('cmdSync', () => {
   it('classifies skills as new/update/synced (dry-run, mocked HTTP)', async () => {
     interactive = false
@@ -115,8 +118,9 @@ describe('cmdSync', () => {
 
     expect(mockCmdPublish).not.toHaveBeenCalled()
 
-    const alreadySyncedNote = mockNote.mock.calls.find((call) => call[0] === 'Already synced')
-    expect(alreadySyncedNote?.[1]).toMatch(/synced-skill/)
+    const output = mockLog.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(output).toMatch(/Already synced/)
+    expect(output).toMatch(/synced-skill/)
 
     const dryRunOutro = mockOutro.mock.calls.at(-1)?.[0]
     expect(String(dryRunOutro)).toMatch(/Dry run: would upload 2 skill/)
@@ -148,12 +152,12 @@ describe('cmdSync', () => {
 
     await cmdSync(makeOpts(), { root: ['/scan'], all: false, dryRun: false, bump: 'patch' }, true)
 
-    const toSyncNote = mockNote.mock.calls.find((call) => call[0] === 'To sync')
-    expect(toSyncNote?.[1]).toMatch(/- new-skill/)
-    expect(toSyncNote?.[1]).toMatch(/- update-skill/)
-
-    const syncedNote = mockNote.mock.calls.find((call) => call[0] === 'Already synced')
-    expect(syncedNote?.[1]).toMatch(/- synced-skill/)
+    const output = mockLog.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(output).toMatch(/To sync/)
+    expect(output).toMatch(/- new-skill/)
+    expect(output).toMatch(/- update-skill/)
+    expect(output).toMatch(/Already synced/)
+    expect(output).toMatch(/- synced-skill/)
 
     const lastCall = mockMultiselect.mock.calls.at(-1)
     const promptArgs = lastCall ? (lastCall[0] as { initialValues: string[] }) : undefined
@@ -173,10 +177,11 @@ describe('cmdSync', () => {
 
     await cmdSync(makeOpts(), { root: ['/scan'], all: true, dryRun: false }, true)
 
-    const syncedNote = mockNote.mock.calls.find((call) => call[0] === 'Already synced')
-    expect(syncedNote?.[1]).toMatch(/new-skill@1.0.0/)
-    expect(syncedNote?.[1]).toMatch(/synced-skill@1.0.0/)
-    expect(String(syncedNote?.[1])).not.toMatch(/\n-/)
+    const output = mockLog.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(output).toMatch(/Already synced/)
+    expect(output).toMatch(/new-skill@1.0.0/)
+    expect(output).toMatch(/synced-skill@1.0.0/)
+    expect(output).not.toMatch(/\n-/)
 
     const outro = mockOutro.mock.calls.at(-1)?.[0]
     expect(String(outro)).toMatch(/Nothing to sync/)
@@ -204,8 +209,9 @@ describe('cmdSync', () => {
     await cmdSync(makeOpts(), { root: ['/scan'], all: true, dryRun: false }, true)
 
     expect(mockCmdPublish).toHaveBeenCalledTimes(1)
-    const duplicateNote = mockNote.mock.calls.find((call) => call[0] === 'Skipped duplicate slugs')
-    expect(duplicateNote?.[1]).toMatch(/dup-skill/)
+    const output = mockLog.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(output).toMatch(/Skipped duplicate slugs/)
+    expect(output).toMatch(/dup-skill/)
   })
 
   it('allows empty changelog for updates (interactive)', async () => {

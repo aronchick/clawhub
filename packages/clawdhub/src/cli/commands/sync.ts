@@ -1,7 +1,7 @@
 import { realpath } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
-import { intro, isCancel, multiselect, note, outro, text } from '@clack/prompts'
+import { intro, isCancel, multiselect, outro, text } from '@clack/prompts'
 import semver from 'semver'
 import { readGlobalConfig } from '../../config.js'
 import { apiRequest, downloadZip } from '../../http.js'
@@ -61,9 +61,9 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
     spinner.stop()
     if (scan.skills.length === 0)
       fail('No skills found (checked workdir and known Clawdis/Clawd locations)')
-    note(
+    printSection(
       `No skills in workdir. Found ${scan.skills.length} in fallback locations.`,
-      wrapNoteBody(formatList(scan.rootsWithSkills, 10)),
+      formatList(scan.rootsWithSkills, 10),
     )
   } else {
     spinner.stop()
@@ -71,7 +71,7 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
   const deduped = dedupeSkillsBySlug(scan.skills)
   const skills = deduped.skills
   if (deduped.duplicates.length > 0) {
-    note('Skipped duplicate slugs', wrapNoteBody(formatCommaList(deduped.duplicates, 16)))
+    printSection('Skipped duplicate slugs', formatCommaList(deduped.duplicates, 16))
   }
   const parsingSpinner = createSpinner('Parsing local skills')
   const locals: LocalSkill[] = []
@@ -123,23 +123,21 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
 
   if (actionable.length === 0) {
     if (synced.length > 0) {
-      note('Already synced', wrapNoteBody(formatCommaList(synced.map(formatSyncedSummary), 16)))
+      printSection('Already synced', formatCommaList(synced.map(formatSyncedSummary), 16))
     }
     outro('Nothing to sync.')
     return
   }
 
-  note(
+  printSection(
     'To sync',
-    wrapNoteBody(
-      formatBulletList(
-        actionable.map((candidate) => formatActionableLine(candidate, bump)),
-        20,
-      ),
+    formatBulletList(
+      actionable.map((candidate) => formatActionableLine(candidate, bump)),
+      20,
     ),
   )
   if (synced.length > 0) {
-    note('Already synced', wrapNoteBody(formatSyncedDisplay(synced)))
+    printSection('Already synced', formatSyncedDisplay(synced))
   }
 
   const selected = await selectToUpload(actionable, {
@@ -392,6 +390,19 @@ function formatList(values: string[], max: number) {
   return [...head, `… +${rest} more`].join('\n')
 }
 
+function printSection(title: string, body?: string) {
+  const trimmed = body?.trim()
+  if (!trimmed) {
+    console.log(title)
+    return
+  }
+  if (trimmed.includes('\n')) {
+    console.log(`\n${title}\n${trimmed}`)
+    return
+  }
+  console.log(`${title}: ${trimmed}`)
+}
+
 function abbreviatePath(value: string) {
   const home = homedir()
   if (value.startsWith(home)) return `~${value.slice(home.length)}`
@@ -447,58 +458,6 @@ function formatSyncedDisplay(synced: Candidate[]) {
   const lines = synced.map(formatSyncedLine)
   if (lines.length <= 12) return formatBulletList(lines, 12)
   return formatCommaList(synced.map(formatSyncedSummary), 24)
-}
-
-function wrapNoteBody(text: string) {
-  const width = noteWrapWidth()
-  return text
-    .split('\n')
-    .map((line) => wrapLine(line, width))
-    .join('\n')
-}
-
-function noteWrapWidth() {
-  const columns = process.stdout.columns ?? 80
-  return Math.min(80, Math.max(20, columns - 4))
-}
-
-function wrapLine(line: string, width: number) {
-  if (line.length <= width) return line
-  if (line.startsWith('- ')) {
-    return wrapWords(line.slice(2), width - 2, '- ', '  ')
-  }
-  return wrapWords(line, width, '', '')
-}
-
-function wrapWords(text: string, width: number, firstPrefix: string, nextPrefix: string) {
-  const words = text.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return firstPrefix.trimEnd()
-  const lines: string[] = []
-  let current = ''
-  for (const word of words) {
-    if (word.length > width) {
-      if (current) {
-        lines.push(current)
-        current = ''
-      }
-      for (let i = 0; i < word.length; i += width) {
-        lines.push(word.slice(i, i + width))
-      }
-      continue
-    }
-    if (!current) {
-      current = word
-      continue
-    }
-    if (current.length + 1 + word.length <= width) {
-      current = `${current} ${word}`
-      continue
-    }
-    lines.push(current)
-    current = word
-  }
-  if (current) lines.push(current)
-  return lines.map((line, index) => `${index === 0 ? firstPrefix : nextPrefix}${line}`).join('\n')
 }
 
 function formatCommaList(values: string[], max: number) {

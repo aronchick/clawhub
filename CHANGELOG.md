@@ -8,6 +8,7 @@
 
 ### Changed
 - CLI sync: default `--concurrency` is now 4 (was 8).
+- CLI sync: replace boxed notes with plain output for long lists.
 
 ### Fixed
 - CLI sync: wrap note output to avoid terminal overflow; cap list lengths.
