@@ -58,7 +58,8 @@ function Home() {
       setIsSearching(false)
       return
     }
-    const requestId = (searchRequest.current += 1)
+    searchRequest.current += 1
+    const requestId = searchRequest.current
     setIsSearching(true)
     const handle = window.setTimeout(() => {
       void (async () => {
