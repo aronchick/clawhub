@@ -25,6 +25,42 @@ export const Route = createRootRoute({
         name: 'description',
         content: 'ClawdHub — a fast skill registry for agents, with vector search.',
       },
+      {
+        property: 'og:site_name',
+        content: 'ClawdHub',
+      },
+      {
+        property: 'og:type',
+        content: 'website',
+      },
+      {
+        property: 'og:title',
+        content: 'ClawdHub',
+      },
+      {
+        property: 'og:description',
+        content: 'ClawdHub — a fast skill registry for agents, with vector search.',
+      },
+      {
+        property: 'og:image',
+        content: 'https://clawdhub.com/logo512.png',
+      },
+      {
+        name: 'twitter:card',
+        content: 'summary_large_image',
+      },
+      {
+        name: 'twitter:title',
+        content: 'ClawdHub',
+      },
+      {
+        name: 'twitter:description',
+        content: 'ClawdHub — a fast skill registry for agents, with vector search.',
+      },
+      {
+        name: 'twitter:image',
+        content: 'https://clawdhub.com/logo512.png',
+      },
     ],
     links: [
       {
