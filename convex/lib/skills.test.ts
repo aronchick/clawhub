@@ -88,6 +88,15 @@ describe('skills utils', () => {
     expect(text.length).toBe(10)
   })
 
+  it('truncates embedding text by default max chars', () => {
+    const text = buildEmbeddingText({
+      frontmatter: {},
+      readme: 'x'.repeat(40_000),
+      otherFiles: [],
+    })
+    expect(text.length).toBeLessThanOrEqual(24_000)
+  })
+
   it('hashes skill files deterministically', async () => {
     const a = await hashSkillFiles([
       { path: 'b.txt', sha256: 'b' },
