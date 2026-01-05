@@ -4,17 +4,20 @@ import type { GlobalOpts } from './types.js'
 
 export const DEFAULT_SITE = 'https://clawdhub.com'
 export const DEFAULT_REGISTRY = 'https://clawdhub.com'
+const LEGACY_REGISTRY_HOSTS = new Set(['auth.clawdhub.com'])
 
 export async function resolveRegistry(opts: GlobalOpts) {
-  const cfg = await readGlobalConfig()
-  if (cfg?.registry && cfg.registry !== DEFAULT_REGISTRY) return cfg.registry
-
-  const explicit = opts.registry.trim()
-  if (explicit && explicit !== DEFAULT_REGISTRY) return explicit
+  const explicit = opts.registrySource !== 'default' ? opts.registry.trim() : ''
+  if (explicit) return explicit
 
   const discovery = await discoverRegistryFromSite(opts.site).catch(() => null)
   const discovered = discovery?.apiBase?.trim()
-  return discovered || explicit || DEFAULT_REGISTRY
+  if (discovered) return discovered
+
+  const cfg = await readGlobalConfig()
+  const cached = cfg?.registry?.trim()
+  if (cached && !isLegacyRegistry(cached)) return cached
+  return DEFAULT_REGISTRY
 }
 
 export async function getRegistry(opts: GlobalOpts, params?: { cache?: boolean }) {
@@ -22,8 +25,17 @@ export async function getRegistry(opts: GlobalOpts, params?: { cache?: boolean }
   const registry = await resolveRegistry(opts)
   if (!cache) return registry
   const cfg = await readGlobalConfig()
-  if (!cfg || !cfg.registry || cfg.registry === DEFAULT_REGISTRY) {
-    await writeGlobalConfig({ registry, token: cfg?.token })
-  }
+  const cached = cfg?.registry?.trim()
+  const shouldUpdate =
+    !cached || isLegacyRegistry(cached) || (cached === DEFAULT_REGISTRY && registry !== DEFAULT_REGISTRY)
+  if (shouldUpdate) await writeGlobalConfig({ registry, token: cfg?.token })
   return registry
+}
+
+function isLegacyRegistry(registry: string) {
+  try {
+    return LEGACY_REGISTRY_HOSTS.has(new URL(registry).hostname)
+  } catch {
+    return false
+  }
 }

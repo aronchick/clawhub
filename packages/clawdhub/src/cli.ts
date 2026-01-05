@@ -37,8 +37,13 @@ function resolveGlobalOpts(): GlobalOpts {
   const workdir = resolve(raw.workdir ?? process.cwd())
   const dir = resolve(workdir, raw.dir ?? 'skills')
   const site = raw.site ?? process.env.CLAWDHUB_SITE ?? DEFAULT_SITE
+  const registrySource = raw.registry
+    ? 'cli'
+    : process.env.CLAWDHUB_REGISTRY
+      ? 'env'
+      : 'default'
   const registry = raw.registry ?? process.env.CLAWDHUB_REGISTRY ?? DEFAULT_REGISTRY
-  return { workdir, dir, site, registry }
+  return { workdir, dir, site, registry, registrySource }
 }
 
 function isInputAllowed() {

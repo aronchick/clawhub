@@ -45,6 +45,7 @@ function makeOpts(workdir: string): GlobalOpts {
     dir: join(workdir, 'skills'),
     site: 'https://clawdhub.com',
     registry: 'https://clawdhub.com',
+    registrySource: 'default',
   }
 }
 

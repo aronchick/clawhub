@@ -80,6 +80,7 @@ function makeOpts(): GlobalOpts {
     dir: '/work/skills',
     site: 'https://clawdhub.com',
     registry: 'https://clawdhub.com',
+    registrySource: 'default',
   }
 }
 
