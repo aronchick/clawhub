@@ -30,7 +30,7 @@ export default function Header() {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <Link to="/" className="brand">
+        <Link to="/" search={{}} className="brand">
           <span className="brand-mark">
             <img src="/clawd-logo.png" alt="" aria-hidden="true" />
           </span>
