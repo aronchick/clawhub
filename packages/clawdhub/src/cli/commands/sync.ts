@@ -183,8 +183,8 @@ function buildScanRoots(opts: GlobalOpts, extraRoots: string[] | undefined) {
 }
 
 function normalizeConcurrency(value: number | undefined) {
-  const raw = typeof value === 'number' ? value : 8
-  const rounded = Number.isFinite(raw) ? Math.round(raw) : 8
+  const raw = typeof value === 'number' ? value : 4
+  const rounded = Number.isFinite(raw) ? Math.round(raw) : 4
   return Math.min(32, Math.max(1, rounded))
 }
 

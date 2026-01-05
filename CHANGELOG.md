@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.4 - Unreleased
+
+### Changed
+- CLI sync: default `--concurrency` is now 4 (was 8).
+
 ## 0.0.3 - 2026-01-04
 
 ### Added
