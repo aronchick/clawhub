@@ -1,17 +1,13 @@
 # Changelog
 
-## 0.0.4 - Unreleased
-
-### Added
-- Home: install command switcher (npm/pnpm/bun).
-
-### Changed
-- CLI sync: default `--concurrency` is now 4 (was 8).
-
 ## 0.0.3 - 2026-01-04
 
 ### Added
 - CLI sync: concurrency flag to limit registry checks.
+- Home: install command switcher (npm/pnpm/bun).
+
+### Changed
+- CLI sync: default `--concurrency` is now 4 (was 8).
 
 ### Fixed
 - CLI sync: wrap note output to avoid terminal overflow; cap list lengths.
