@@ -113,6 +113,40 @@ describe('Upload route', () => {
     expect(await screen.findByText(/Ready to publish/i, {}, { timeout: 3000 })).toBeTruthy()
   })
 
+  it('unwraps folder uploads so SKILL.md can be at the top-level', async () => {
+    generateUploadUrl.mockResolvedValue('https://upload.local')
+    publishVersion.mockResolvedValue(undefined)
+    render(<Upload />)
+    fireEvent.change(screen.getByPlaceholderText('my-skill-pack'), {
+      target: { value: 'ynab' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('My Skill Pack'), {
+      target: { value: 'YNAB' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('1.0.0'), {
+      target: { value: '1.0.0' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('latest, beta'), {
+      target: { value: 'latest' },
+    })
+
+    const file = new File(['hello'], 'SKILL.md', { type: 'text/markdown' })
+    Object.defineProperty(file, 'webkitRelativePath', { value: 'ynab/SKILL.md' })
+
+    const input = screen.getByTestId('upload-input') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [file] } })
+
+    expect(await screen.findByText('SKILL.md')).toBeTruthy()
+    expect(await screen.findByText(/Ready to publish/i)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: /publish/i }))
+    await waitFor(() => {
+      expect(publishVersion).toHaveBeenCalled()
+    })
+    const args = publishVersion.mock.calls[0]?.[0] as { files?: Array<{ path: string }> }
+    expect(args.files?.[0]?.path).toBe('SKILL.md')
+  })
+
   it('blocks non-text folder uploads (png)', async () => {
     render(<Upload />)
     fireEvent.change(screen.getByPlaceholderText('my-skill-pack'), {

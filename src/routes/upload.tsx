@@ -31,12 +31,33 @@ export function Upload() {
   const navigate = useNavigate()
   const maxBytes = 50 * 1024 * 1024
   const totalBytes = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files])
+  const stripRoot = useMemo(() => {
+    if (files.length === 0) return null
+    const paths = files.map((file) => (file.webkitRelativePath || file.name).replace(/^\.\//, ''))
+    if (!paths.every((path) => path.includes('/'))) return null
+    const firstSegment = paths[0]?.split('/')[0]
+    if (!firstSegment) return null
+    if (!paths.every((path) => path.startsWith(`${firstSegment}/`))) return null
+    return firstSegment
+  }, [files])
+  const normalizedPaths = useMemo(
+    () =>
+      files.map((file) => {
+        const raw = (file.webkitRelativePath || file.name).replace(/^\.\//, '')
+        if (stripRoot && raw.startsWith(`${stripRoot}/`)) {
+          return raw.slice(stripRoot.length + 1)
+        }
+        return raw
+      }),
+    [files, stripRoot],
+  )
   const hasSkillFile = useMemo(
     () =>
-      files.some(
-        (file) => file.name.toLowerCase() === 'skill.md' || file.name.toLowerCase() === 'skills.md',
-      ),
-    [files],
+      normalizedPaths.some((path) => {
+        const lower = path.trim().toLowerCase()
+        return lower === 'skill.md' || lower === 'skills.md'
+      }),
+    [normalizedPaths],
   )
   const sizeLabel = totalBytes ? formatBytes(totalBytes) : '0 B'
   const trimmedSlug = slug.trim()
@@ -136,7 +157,11 @@ export function Upload() {
       const uploadUrl = await generateUploadUrl()
       const storageId = await uploadFile(uploadUrl, file)
       const sha256 = await hashFile(file)
-      const path = file.webkitRelativePath || file.name
+      const rawPath = (file.webkitRelativePath || file.name).replace(/^\.\//, '')
+      const path =
+        stripRoot && rawPath.startsWith(`${stripRoot}/`)
+          ? rawPath.slice(stripRoot.length + 1)
+          : rawPath
       uploaded.push({
         path,
         size: file.size,
@@ -317,12 +342,14 @@ export function Upload() {
               </div>
               {files.length ? (
                 <div className="upload-filelist">
-                  {files.map((file) => (
+                  {files.map((file, index) => (
                     <div
                       key={`${file.webkitRelativePath || file.name}:${file.size}`}
                       className="upload-file"
                     >
-                      <span>{file.webkitRelativePath || file.name}</span>
+                      <span>
+                        {normalizedPaths[index] ?? (file.webkitRelativePath || file.name)}
+                      </span>
                       <span>{formatBytes(file.size)}</span>
                       <button
                         className="upload-remove"
