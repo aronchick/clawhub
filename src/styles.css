@@ -653,6 +653,24 @@ code {
     box-shadow 0.2s ease;
 }
 
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+
+.loading-indicator::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 107, 74, 0.25);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+
 .skill-card {
   min-height: 176px;
 }
@@ -1153,6 +1171,12 @@ code {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

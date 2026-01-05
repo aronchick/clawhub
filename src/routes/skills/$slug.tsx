@@ -26,6 +26,7 @@ function SkillDetail() {
   const [tagName, setTagName] = useState('latest')
   const [tagVersionId, setTagVersionId] = useState<Id<'skillVersions'> | ''>('')
 
+  const isLoadingSkill = result === undefined
   const skill = result?.skill
   const owner = result?.owner
   const latestVersion = result?.latestVersion
@@ -61,9 +62,15 @@ function SkillDetail() {
 
   useEffect(() => {
     if (!latestVersion) return
+    setReadme(null)
+    let cancelled = false
     void getReadme({ versionId: latestVersion._id }).then((data) => {
+      if (cancelled) return
       setReadme(data.text)
     })
+    return () => {
+      cancelled = true
+    }
   }, [latestVersion, getReadme])
 
   useEffect(() => {
@@ -72,7 +79,17 @@ function SkillDetail() {
     }
   }, [latestVersion, tagVersionId])
 
-  if (!skill) {
+  if (isLoadingSkill) {
+    return (
+      <main className="section">
+        <div className="card">
+          <div className="loading-indicator">Loading skill…</div>
+        </div>
+      </main>
+    )
+  }
+
+  if (result === null || !skill) {
     return (
       <main className="section">
         <div className="card">Skill not found.</div>

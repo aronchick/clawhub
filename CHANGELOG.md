@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.4 - Unreleased
+
+### Fixed
+- Web: skill detail shows a loading state instead of flashing "Skill not found".
+
 ## 0.0.3 - 2026-01-04
 
 ### Added
