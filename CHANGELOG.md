@@ -10,6 +10,7 @@
 ### Fixed
 - Web: skill detail shows a loading state instead of flashing "Skill not found".
 - Web: user profile shows avatar + loading state (no "User not found" flash).
+- Web: upload now unwraps folder picks so `SKILL.md` can be at the bundle root.
 
 ## 0.0.3 - 2026-01-04
 
