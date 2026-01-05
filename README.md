@@ -1,28 +1,61 @@
 # ClawdHub
 
-Minimal skill registry powered by TanStack Start + Convex.
+<p align="center">
+  <a href="https://github.com/clawdbot/clawdhub/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/clawdbot/clawdhub/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
+  <a href="https://discord.gg/clawd"><img src="https://img.shields.io/discord/1456350064065904867?label=Discord&logo=discord&logoColor=white&color=5865F2&style=for-the-badge" alt="Discord"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+</p>
 
-## Quick start
+ClawdHub is the **public skill registry for Clawdbot**: publish, version, and search text-based agent skills (a `SKILL.md` plus supporting files).
+It’s designed for fast browsing + a CLI-friendly API, with moderation hooks and vector search.
+
+Live: `https://clawdhub.com`
+
+## What you can do
+
+- Browse skills + render their `SKILL.md`.
+- Publish new versions with changelogs + tags (including `latest`).
+- Search via embeddings (vector index) instead of brittle keywords.
+- Star + comment; admins/mods can curate and approve.
+
+## How it works (high level)
+
+- Web app: TanStack Start (React, Vite/Nitro).
+- Backend: Convex (DB + file storage + HTTP actions) + Convex Auth (GitHub OAuth).
+- Search: OpenAI embeddings (`text-embedding-3-small`) + Convex vector search.
+- API schema + routes: `packages/schema` (`clawdhub-schema`).
+
+## Repo layout
+
+- `src/` — TanStack Start app (routes, components, styles).
+- `convex/` — schema + queries/mutations/actions + HTTP API routes.
+- `packages/schema/` — shared API types/routes for the CLI and app.
+- `docs/spec.md` — product + implementation spec (good first read).
+
+## Local dev
+
+Prereqs: Bun + Convex CLI.
 
 ```bash
 bun install
 cp .env.local.example .env.local
-bun --bun run dev
-```
 
-In another terminal:
+# terminal A: web app
+bun run dev
 
-```bash
+# terminal B: Convex dev deployment
 bunx convex dev
 ```
 
-## Convex Auth setup
+## Auth (GitHub OAuth) setup
+
+Create a GitHub OAuth App, set `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`, then:
 
 ```bash
 bunx auth --deployment-name <deployment> --web-server-url http://localhost:3000
 ```
 
-This writes `JWT_PRIVATE_KEY` + `JWKS` to the deployment and prints the values for local `.env.local`.
+This writes `JWT_PRIVATE_KEY` + `JWKS` to the deployment and prints values for your local `.env.local`.
 
 ## Environment
 
@@ -32,7 +65,7 @@ This writes `JWT_PRIVATE_KEY` + `JWKS` to the deployment and prints the values f
 - `SITE_URL`: App URL (local: `http://localhost:3000`).
 - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`: GitHub OAuth App.
 - `JWT_PRIVATE_KEY` / `JWKS`: Convex Auth keys.
-- `OPENAI_API_KEY`: embeddings.
+- `OPENAI_API_KEY`: embeddings for search + indexing.
 
 ## Scripts
 
