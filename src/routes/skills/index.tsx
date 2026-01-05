@@ -40,6 +40,7 @@ function SkillsIndex() {
   const [query, setQuery] = useState(search.q)
 
   const skills = useQuery(api.skills.list, { limit: 500 }) as Doc<'skills'>[] | undefined
+  const isLoadingSkills = skills === undefined
 
   useEffect(() => {
     setQuery(search.q)
@@ -91,8 +92,11 @@ function SkillsIndex() {
             Skills
           </h1>
           <p className="section-subtitle" style={{ marginBottom: 0 }}>
-            {typeof total === 'number' ? `${showing} of ${total}` : `${showing}`} skills
-            {search.highlighted ? ' (highlighted)' : ''}.
+            {isLoadingSkills
+              ? 'Loading skills…'
+              : `${showing}${typeof total === 'number' ? ` of ${total}` : ''} skills${
+                  search.highlighted ? ' (highlighted)' : ''
+                }.`}
           </p>
         </div>
         <div className="skills-toolbar">
@@ -183,7 +187,11 @@ function SkillsIndex() {
         </div>
       </header>
 
-      {showing === 0 ? (
+      {isLoadingSkills ? (
+        <div className="card">
+          <div className="loading-indicator">Loading skills…</div>
+        </div>
+      ) : showing === 0 ? (
         <div className="card">No skills match that filter.</div>
       ) : search.view === 'cards' ? (
         <div className="grid">
