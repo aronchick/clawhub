@@ -5,6 +5,7 @@
 ### Added
 - Web: `/skills` list view with sorting (newest/downloads/stars/name) + quick filter.
 - Web: admin/moderator highlight toggle on skill detail.
+- Web: canonical skill URLs as `/<owner>/<slug>` (legacy `/skills/<slug>` redirects).
 
 ### Fixed
 - Web: skill detail shows a loading state instead of flashing "Skill not found".
