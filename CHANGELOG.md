@@ -13,7 +13,7 @@
 - CLI: telemetry opt-out via `CLAWDHUB_DISABLE_TELEMETRY=1`.
 - Web: move theme picker into mobile menu.
 
-## 0.0.5 - Unreleased
+## 0.0.5 - 2026-01-06
 
 ### Added
 - Maintenance: admin backfill to re-parse `SKILL.md` and repair stored summaries/parsed metadata.
