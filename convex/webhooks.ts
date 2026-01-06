@@ -17,7 +17,17 @@ export const sendDiscordWebhook = internalAction({
   },
   handler: async (_ctx, args) => {
     const config = getWebhookConfig()
-    if (!shouldSendWebhook(args.event, args.skill, config)) return { ok: false, skipped: true }
+    const logMeta = {
+      event: args.event,
+      slug: args.skill.slug,
+      version: args.skill.version ?? null,
+      batch: args.skill.batch ?? null,
+      highlightedOnly: config.highlightedOnly,
+    }
+    if (!shouldSendWebhook(args.event, args.skill, config)) {
+      console.info('[webhook] skipped', logMeta)
+      return { ok: false, skipped: true }
+    }
 
     const payload = buildDiscordPayload(args.event, args.skill, config)
     const response = await fetch(config.url as string, {
@@ -27,8 +37,14 @@ export const sendDiscordWebhook = internalAction({
     })
     if (!response.ok) {
       const message = await response.text()
+      console.error('[webhook] failed', {
+        ...logMeta,
+        status: response.status,
+        body: message.slice(0, 300),
+      })
       throw new Error(`Discord webhook failed: ${response.status} ${message}`)
     }
+    console.info('[webhook] sent', { ...logMeta, status: response.status })
     return { ok: true }
   },
 })
