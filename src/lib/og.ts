@@ -57,7 +57,7 @@ export function buildSkillMeta(source: SkillMetaSource): SkillMeta {
   return {
     title,
     description: truncate(description, 200),
-    image: `${siteUrl}/logo512.png`,
+    image: `${siteUrl}/og.png`,
     url,
     owner: owner || null,
   }

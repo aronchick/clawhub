@@ -7,6 +7,7 @@
 - Skills: show current + all-time installs; sort by installs.
 - Profile: private "Installed" tab with JSON export + delete telemetry controls.
 - Docs: add `docs/telemetry.md` (what we track + how to opt out).
+- Web: custom Open Graph image (`/og.png`) + richer OG/Twitter tags.
 
 ### Changed
 - CLI: telemetry opt-out via `CLAWDHUB_DISABLE_TELEMETRY=1`.
