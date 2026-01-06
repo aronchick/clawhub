@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { api } from '../../convex/_generated/api'
 import type { Doc, Id } from '../../convex/_generated/dataModel'
+import { SkillDiffCard } from './SkillDiffCard'
 
 type SkillDetailPageProps = {
   slug: string
@@ -40,6 +41,10 @@ export function SkillDetailPage({
   const versions = useQuery(
     api.skills.listVersions,
     skill ? { skillId: skill._id, limit: 10 } : 'skip',
+  ) as Doc<'skillVersions'>[] | undefined
+  const diffVersions = useQuery(
+    api.skills.listVersions,
+    skill ? { skillId: skill._id, limit: 200 } : 'skip',
   ) as Doc<'skillVersions'>[] | undefined
 
   const isStarred = useQuery(
@@ -183,6 +188,7 @@ export function SkillDetailPage({
               </ReactMarkdown>
             </div>
           </div>
+          {skill ? <SkillDiffCard skill={skill} versions={diffVersions ?? []} /> : null}
           <div className="card">
             <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
               Comments

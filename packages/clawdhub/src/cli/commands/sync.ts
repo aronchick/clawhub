@@ -5,7 +5,6 @@ import { getFallbackSkillRoots } from '../scanSkills.js'
 import type { GlobalOpts } from '../types.js'
 import { createSpinner, fail, formatError, isInteractive } from '../ui.js'
 import { cmdPublish } from './publish.js'
-import type { Candidate, LocalSkill, SyncOptions } from './syncTypes.js'
 import {
   buildScanRoots,
   checkRegistrySyncState,
@@ -26,6 +25,7 @@ import {
   scanRoots,
   selectToUpload,
 } from './syncHelpers.js'
+import type { Candidate, LocalSkill, SyncOptions } from './syncTypes.js'
 
 export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllowed: boolean) {
   const allowPrompt = isInteractive() && inputAllowed !== false

@@ -18,6 +18,7 @@ import type * as lib_apiTokenAuth from "../lib/apiTokenAuth.js";
 import type * as lib_changelog from "../lib/changelog.js";
 import type * as lib_embeddings from "../lib/embeddings.js";
 import type * as lib_skillBackfill from "../lib/skillBackfill.js";
+import type * as lib_skillPublish from "../lib/skillPublish.js";
 import type * as lib_skills from "../lib/skills.js";
 import type * as lib_tokens from "../lib/tokens.js";
 import type * as lib_webhooks from "../lib/webhooks.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   "lib/changelog": typeof lib_changelog;
   "lib/embeddings": typeof lib_embeddings;
   "lib/skillBackfill": typeof lib_skillBackfill;
+  "lib/skillPublish": typeof lib_skillPublish;
   "lib/skills": typeof lib_skills;
   "lib/tokens": typeof lib_tokens;
   "lib/webhooks": typeof lib_webhooks;

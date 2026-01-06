@@ -4,17 +4,20 @@ import type { Doc, Id } from './_generated/dataModel'
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { assertRole, requireUser, requireUserFromAction } from './lib/access'
 import { generateChangelogPreview as buildChangelogPreview } from './lib/changelog'
-import { getFrontmatterValue } from './lib/skills'
 import {
   fetchText,
+  type PublishResult,
   publishVersionForUser,
   queueHighlightedWebhook,
-  type PublishResult,
 } from './lib/skillPublish'
+import { getFrontmatterValue } from './lib/skills'
 
 export { publishVersionForUser } from './lib/skillPublish'
 
 type ReadmeResult = { path: string; text: string }
+type FileTextResult = { path: string; text: string; size: number; sha256: string }
+
+const MAX_DIFF_FILE_BYTES = 200 * 1024
 
 export const getBySlug = query({
   args: { slug: v.string() },
@@ -162,6 +165,26 @@ export const getReadme: ReturnType<typeof action> = action({
     if (!readmeFile) throw new ConvexError('SKILL.md not found')
     const text = await fetchText(ctx, readmeFile.storageId)
     return { path: readmeFile.path, text }
+  },
+})
+
+export const getFileText: ReturnType<typeof action> = action({
+  args: { versionId: v.id('skillVersions'), path: v.string() },
+  handler: async (ctx, args): Promise<FileTextResult> => {
+    const version = (await ctx.runQuery(internal.skills.getVersionByIdInternal, {
+      versionId: args.versionId,
+    })) as Doc<'skillVersions'> | null
+    if (!version) throw new ConvexError('Version not found')
+
+    const normalizedPath = args.path.trim()
+    const file = version.files.find((entry) => entry.path === normalizedPath)
+    if (!file) throw new ConvexError('File not found')
+    if (file.size > MAX_DIFF_FILE_BYTES) {
+      throw new ConvexError('File exceeds 200KB limit')
+    }
+
+    const text = await fetchText(ctx, file.storageId)
+    return { path: file.path, text, size: file.size, sha256: file.sha256 }
   },
 })
 

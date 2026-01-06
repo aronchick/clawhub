@@ -1222,6 +1222,207 @@ code {
   gap: 20px;
 }
 
+.diff-card {
+  gap: 16px;
+}
+
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.diff-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.diff-toggle {
+  border: none;
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.diff-toggle.is-active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 8px 18px rgba(29, 26, 23, 0.12);
+}
+
+.diff-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.diff-select {
+  display: grid;
+  gap: 6px;
+}
+
+.diff-select label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.diff-swap {
+  align-self: end;
+}
+
+.diff-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.diff-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.diff-files {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.diff-file {
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border 0.2s ease;
+}
+
+.diff-file:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(29, 26, 23, 0.12);
+}
+
+.diff-file.is-active {
+  border-color: rgba(255, 107, 74, 0.45);
+  box-shadow: 0 12px 24px rgba(255, 107, 74, 0.2);
+}
+
+.diff-file-name {
+  font-size: 0.9rem;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.diff-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  align-self: start;
+}
+
+.diff-pill-added {
+  background: rgba(43, 198, 164, 0.18);
+  color: #0b6b58;
+}
+
+.diff-pill-removed {
+  background: rgba(255, 107, 74, 0.18);
+  color: #9b3a25;
+}
+
+.diff-pill-changed {
+  background: rgba(240, 196, 106, 0.22);
+  color: #8a5b14;
+}
+
+.diff-pill-same {
+  background: rgba(29, 26, 23, 0.08);
+  color: var(--ink-soft);
+}
+
+.diff-view {
+  position: relative;
+  min-height: 360px;
+}
+
+.diff-monaco {
+  height: 420px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.diff-empty {
+  border-radius: 16px;
+  border: 1px dashed var(--line);
+  padding: 20px;
+  color: var(--ink-soft);
+  background: var(--surface-muted);
+  font-size: 0.9rem;
+}
+
+.diff-loading {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+}
+
+[data-theme="dark"] .diff-pill-added {
+  color: #72f0d3;
+}
+
+[data-theme="dark"] .diff-pill-removed {
+  color: #ffc1b1;
+}
+
+[data-theme="dark"] .diff-pill-changed {
+  color: #ffd494;
+}
+
+[data-theme="dark"] .diff-loading {
+  background: rgba(32, 27, 24, 0.85);
+}
+
 @media (max-width: 760px) {
   .navbar-inner {
     padding: 16px 16px;
@@ -1254,6 +1455,22 @@ code {
 
   .skill-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .diff-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .diff-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .diff-files {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(180px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 6px;
+    max-height: none;
   }
 
   .skills-row {
