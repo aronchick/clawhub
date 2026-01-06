@@ -1270,12 +1270,21 @@ code {
 }
 
 @media (max-width: 520px) {
-  .brand-name {
-    display: none;
+  .brand {
+    font-size: 1.25rem;
   }
 
   .nav-actions {
     gap: 10px;
+  }
+
+  .navbar .btn {
+    padding: 9px 12px;
+    font-size: 0.95rem;
+  }
+
+  .sign-in-provider {
+    display: none;
   }
 
   .user-trigger .mono,

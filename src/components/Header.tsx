@@ -180,7 +180,8 @@ export default function Header() {
               disabled={isLoading}
               onClick={() => void signIn('github')}
             >
-              Sign in with GitHub
+              <span className="sign-in-label">Sign in</span>
+              <span className="sign-in-provider">with GitHub</span>
             </button>
           )}
         </div>
