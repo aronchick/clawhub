@@ -42,6 +42,8 @@ const skills = defineTable({
   batch: v.optional(v.string()),
   stats: v.object({
     downloads: v.number(),
+    installsCurrent: v.optional(v.number()),
+    installsAllTime: v.optional(v.number()),
     stars: v.number(),
     versions: v.number(),
     comments: v.number(),
@@ -141,6 +143,44 @@ const apiTokens = defineTable({
   .index('by_user', ['userId'])
   .index('by_hash', ['tokenHash'])
 
+const userSyncRoots = defineTable({
+  userId: v.id('users'),
+  rootId: v.string(),
+  label: v.string(),
+  firstSeenAt: v.number(),
+  lastSeenAt: v.number(),
+  expiredAt: v.optional(v.number()),
+})
+  .index('by_user', ['userId'])
+  .index('by_user_root', ['userId', 'rootId'])
+
+const userSkillInstalls = defineTable({
+  userId: v.id('users'),
+  skillId: v.id('skills'),
+  firstSeenAt: v.number(),
+  lastSeenAt: v.number(),
+  activeRoots: v.number(),
+  lastVersion: v.optional(v.string()),
+})
+  .index('by_user', ['userId'])
+  .index('by_user_skill', ['userId', 'skillId'])
+  .index('by_skill', ['skillId'])
+
+const userSkillRootInstalls = defineTable({
+  userId: v.id('users'),
+  rootId: v.string(),
+  skillId: v.id('skills'),
+  firstSeenAt: v.number(),
+  lastSeenAt: v.number(),
+  lastVersion: v.optional(v.string()),
+  removedAt: v.optional(v.number()),
+})
+  .index('by_user', ['userId'])
+  .index('by_user_root', ['userId', 'rootId'])
+  .index('by_user_root_skill', ['userId', 'rootId', 'skillId'])
+  .index('by_user_skill', ['userId', 'skillId'])
+  .index('by_skill', ['skillId'])
+
 export default defineSchema({
   ...authTables,
   users,
@@ -151,4 +191,7 @@ export default defineSchema({
   stars,
   auditLogs,
   apiTokens,
+  userSyncRoots,
+  userSkillInstalls,
+  userSkillRootInstalls,
 })

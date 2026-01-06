@@ -133,7 +133,9 @@ export function SkillDetailPage({
             </h1>
             <p className="section-subtitle">{skill.summary ?? 'No summary provided.'}</p>
             <div className="stat">
-              ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads} · v{latestVersion?.version}
+              ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads} · ⤒{' '}
+              {skill.stats.installsCurrent ?? 0} current · {skill.stats.installsAllTime ?? 0}{' '}
+              all-time · v{latestVersion?.version}
             </div>
             {owner?.handle ? (
               <div className="stat">

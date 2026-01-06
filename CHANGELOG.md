@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.5 - 2026-01-06
+
+### Added
+- Telemetry: track installs via `clawdhub sync` (logged-in only), per root, with 120-day staleness.
+- Skills: show current + all-time installs; sort by installs.
+- Profile: private "Installed" tab with JSON export + delete telemetry controls.
+
+### Changed
+- CLI: telemetry opt-out via `CLAWDHUB_DISABLE_TELEMETRY=1`.
+
 ## 0.0.4 - 2026-01-05
 
 ### Added

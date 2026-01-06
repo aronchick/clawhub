@@ -1,11 +1,6 @@
 /* @vitest-environment node */
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-  buildDiscordPayload,
-  buildSkillUrl,
-  getWebhookConfig,
-  shouldSendWebhook,
-} from './webhooks'
+import { buildDiscordPayload, buildSkillUrl, getWebhookConfig, shouldSendWebhook } from './webhooks'
 
 const originalEnv = { ...process.env }
 
@@ -32,13 +27,9 @@ describe('webhook config', () => {
 describe('webhook filtering', () => {
   it('skips when url missing', () => {
     const config = getWebhookConfig({} as NodeJS.ProcessEnv)
-    expect(
-      shouldSendWebhook(
-        'skill.publish',
-        { slug: 'demo', displayName: 'Demo' },
-        config,
-      ),
-    ).toBe(false)
+    expect(shouldSendWebhook('skill.publish', { slug: 'demo', displayName: 'Demo' }, config)).toBe(
+      false,
+    )
   })
 
   it('filters non-highlighted when highlighted-only', () => {

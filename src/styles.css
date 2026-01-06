@@ -1456,6 +1456,104 @@ code {
   color: var(--ink-soft);
 }
 
+.profile-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.profile-tab {
+  border: 1px solid rgba(255, 107, 74, 0.2);
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--ink-soft);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+[data-theme="dark"] .profile-tab {
+  background: rgba(24, 19, 16, 0.55);
+  border-color: rgba(255, 131, 95, 0.35);
+}
+
+.profile-tab:hover {
+  transform: translateY(-1px);
+  color: var(--ink);
+}
+
+.profile-tab.is-active {
+  background: rgba(255, 107, 74, 0.16);
+  border-color: rgba(255, 107, 74, 0.32);
+  color: var(--accent-deep);
+}
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.telemetry-root-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.telemetry-root-title {
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.telemetry-root-meta {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+.telemetry-skill-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.telemetry-skill-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.telemetry-skill-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.telemetry-skill-slug {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.telemetry-skill-meta {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
 .settings-card {
   display: grid;
   gap: 16px;

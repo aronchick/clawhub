@@ -1,7 +1,9 @@
 import {
   ApiCliSkillDeleteResponseSchema,
+  ApiCliTelemetrySyncResponseSchema,
   CliPublishRequestSchema,
   CliSkillDeleteRequestSchema,
+  CliTelemetrySyncRequestSchema,
   parseArk,
 } from 'clawdhub-schema'
 import { api, internal } from './_generated/api'
@@ -220,6 +222,39 @@ export const cliSkillUndeleteHttp = httpAction((ctx, request) =>
   cliSkillDeleteHandler(ctx, request, false),
 )
 
+async function cliTelemetrySyncHandler(ctx: ActionCtx, request: Request) {
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return text('Invalid JSON', 400)
+  }
+
+  try {
+    const { userId } = await requireApiTokenUser(ctx, request)
+    const args = parseArk(CliTelemetrySyncRequestSchema, body, 'Telemetry payload')
+    await ctx.runMutation(internal.telemetry.reportCliSyncInternal, {
+      userId,
+      roots: args.roots.map((root) => ({
+        rootId: root.rootId,
+        label: root.label,
+        skills: root.skills.map((skill) => ({
+          slug: skill.slug,
+          version: skill.version ?? undefined,
+        })),
+      })),
+    })
+    const ok = parseArk(ApiCliTelemetrySyncResponseSchema, { ok: true }, 'Telemetry response')
+    return json(ok)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Telemetry failed'
+    if (message.toLowerCase().includes('unauthorized')) return text('Unauthorized', 401)
+    return text(message, 400)
+  }
+}
+
+export const cliTelemetrySyncHttp = httpAction(cliTelemetrySyncHandler)
+
 function json(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {
     status,
@@ -276,4 +311,5 @@ export const __handlers = {
   cliUploadUrlHandler,
   cliPublishHandler,
   cliSkillDeleteHandler,
+  cliTelemetrySyncHandler,
 }

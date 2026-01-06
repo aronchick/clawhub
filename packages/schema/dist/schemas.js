@@ -76,6 +76,19 @@ export const ApiSkillResolveResponseSchema = type({
     match: type({ version: 'string' }).or('null'),
     latestVersion: type({ version: 'string' }).or('null'),
 });
+export const CliTelemetrySyncRequestSchema = type({
+    roots: type({
+        rootId: 'string',
+        label: 'string',
+        skills: type({
+            slug: 'string',
+            version: 'string|null?',
+        }).array(),
+    }).array(),
+});
+export const ApiCliTelemetrySyncResponseSchema = type({
+    ok: 'true',
+});
 export const SkillInstallSpecSchema = type({
     id: 'string?',
     kind: '"brew"|"node"|"go"|"uv"',

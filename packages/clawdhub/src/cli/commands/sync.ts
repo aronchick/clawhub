@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { realpath } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
@@ -6,6 +7,7 @@ import semver from 'semver'
 import { readGlobalConfig } from '../../config.js'
 import { apiRequest, downloadZip } from '../../http.js'
 import {
+  ApiCliTelemetrySyncResponseSchema,
   ApiCliWhoamiResponseSchema,
   ApiRoutes,
   ApiSkillMetaResponseSchema,
@@ -54,16 +56,20 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
   const concurrency = normalizeConcurrency(options.concurrency)
 
   const spinner = createSpinner('Scanning for local skills')
-  let scan = await scanRoots(selectedRoots)
-  if (scan.skills.length === 0) {
+  const primaryScan = await scanRoots(selectedRoots)
+  let scan = primaryScan
+  let telemetryScan = primaryScan
+  if (primaryScan.skills.length === 0) {
     const fallback = getFallbackSkillRoots(opts.workdir)
-    scan = await scanRoots(fallback)
+    const fallbackScan = await scanRoots(fallback)
     spinner.stop()
-    if (scan.skills.length === 0)
+    telemetryScan = mergeScan(primaryScan, fallbackScan)
+    scan = fallbackScan
+    if (fallbackScan.skills.length === 0)
       fail('No skills found (checked workdir and known Clawdis/Clawd locations)')
     printSection(
-      `No skills in workdir. Found ${scan.skills.length} in fallback locations.`,
-      formatList(scan.rootsWithSkills, 10),
+      `No skills in workdir. Found ${fallbackScan.skills.length} in fallback locations.`,
+      formatList(fallbackScan.rootsWithSkills, 10),
     )
   } else {
     spinner.stop()
@@ -116,6 +122,13 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
   } finally {
     candidatesSpinner.stop()
   }
+
+  await reportTelemetryIfEnabled({
+    token,
+    registry,
+    scan: telemetryScan,
+    candidates,
+  })
 
   const synced = candidates.filter((candidate) => candidate.status === 'synced')
   const actionable = candidates.filter((candidate) => candidate.status !== 'synced')
@@ -173,6 +186,49 @@ export async function cmdSync(opts: GlobalOpts, options: SyncOptions, inputAllow
   }
 
   outro(`Uploaded ${selected.length} skill(s).`)
+}
+
+async function reportTelemetryIfEnabled(params: {
+  token: string
+  registry: string
+  scan: { roots: string[]; skillsByRoot: Record<string, SkillFolder[]> }
+  candidates: Candidate[]
+}) {
+  if (isTelemetryDisabled()) return
+  const versionBySlug = new Map<string, string | null>()
+  for (const candidate of params.candidates) {
+    versionBySlug.set(candidate.slug, candidate.matchVersion ?? null)
+  }
+
+  const roots = params.scan.roots.map((root) => ({
+    rootId: rootTelemetryId(root),
+    label: formatRootLabel(root),
+    skills: (params.scan.skillsByRoot[root] ?? []).map((skill) => ({
+      slug: skill.slug,
+      version: versionBySlug.get(skill.slug) ?? null,
+    })),
+  }))
+
+  try {
+    await apiRequest(
+      params.registry,
+      {
+        method: 'POST',
+        path: ApiRoutes.cliTelemetrySync,
+        token: params.token,
+        body: { roots },
+      },
+      ApiCliTelemetrySyncResponseSchema,
+    )
+  } catch {
+    // ignore telemetry failures
+  }
+}
+
+function isTelemetryDisabled() {
+  const raw = process.env.CLAWDHUB_DISABLE_TELEMETRY
+  if (!raw) return false
+  return ['1', 'true', 'yes', 'on'].includes(raw.trim().toLowerCase())
 }
 
 function buildScanRoots(opts: GlobalOpts, extraRoots: string[] | undefined) {
@@ -287,8 +343,10 @@ async function scanRoots(roots: string[]) {
   const all: SkillFolder[] = []
   const rootsWithSkills: string[] = []
   const uniqueRoots = await dedupeRoots(roots)
+  const skillsByRoot: Record<string, SkillFolder[]> = {}
   for (const root of uniqueRoots) {
     const found = await findSkillFolders(root)
+    skillsByRoot[root] = found
     if (found.length > 0) rootsWithSkills.push(root)
     all.push(...found)
   }
@@ -296,7 +354,40 @@ async function scanRoots(roots: string[]) {
   for (const folder of all) {
     byFolder.set(folder.folder, folder)
   }
-  return { skills: Array.from(byFolder.values()), rootsWithSkills }
+  return {
+    roots: uniqueRoots,
+    skillsByRoot,
+    skills: Array.from(byFolder.values()),
+    rootsWithSkills,
+  }
+}
+
+function mergeScan(
+  left: {
+    roots: string[]
+    skillsByRoot: Record<string, SkillFolder[]>
+    skills: SkillFolder[]
+    rootsWithSkills: string[]
+  },
+  right: {
+    roots: string[]
+    skillsByRoot: Record<string, SkillFolder[]>
+    skills: SkillFolder[]
+    rootsWithSkills: string[]
+  },
+) {
+  const mergedRoots = Array.from(new Set([...left.roots, ...right.roots]))
+  const skillsByRoot: Record<string, SkillFolder[]> = {}
+  for (const root of mergedRoots) {
+    skillsByRoot[root] = right.skillsByRoot[root] ?? left.skillsByRoot[root] ?? []
+  }
+  const byFolder = new Map<string, SkillFolder>()
+  for (const entry of [...left.skills, ...right.skills]) {
+    byFolder.set(entry.folder, entry)
+  }
+  const skills = Array.from(byFolder.values())
+  const rootsWithSkills = mergedRoots.filter((root) => (skillsByRoot[root]?.length ?? 0) > 0)
+  return { roots: mergedRoots, skillsByRoot, skills, rootsWithSkills }
 }
 
 async function dedupeRoots(roots: string[]) {
@@ -396,6 +487,26 @@ function abbreviatePath(value: string) {
   const home = homedir()
   if (value.startsWith(home)) return `~${value.slice(home.length)}`
   return value
+}
+
+function rootTelemetryId(value: string) {
+  return createHash('sha256').update(value).digest('hex')
+}
+
+function formatRootLabel(value: string) {
+  const home = homedir()
+  if (value === home) return '~'
+
+  const normalized = value.replaceAll('\\', '/')
+  const normalizedHome = home.replaceAll('\\', '/')
+  const isHome = normalized === normalizedHome || normalized.startsWith(`${normalizedHome}/`)
+
+  const stripped = isHome ? normalized.slice(normalizedHome.length).replace(/^\//, '') : normalized
+  const parts = stripped.split('/').filter(Boolean)
+  const tail = parts.slice(-2).join('/')
+
+  if (!tail) return isHome ? '~' : '…'
+  return isHome ? `~/${tail}` : `…/${tail}`
 }
 
 function dedupeSkillsBySlug(skills: SkillFolder[]) {

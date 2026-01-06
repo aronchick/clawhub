@@ -79,7 +79,14 @@ describe('httpApi handlers', () => {
         displayName: 'Demo',
         summary: 'x',
         tags: {},
-        stats: { downloads: 0, stars: 0, versions: 1, comments: 0 },
+        stats: {
+          downloads: 0,
+          installsCurrent: 0,
+          installsAllTime: 0,
+          stars: 0,
+          versions: 1,
+          comments: 0,
+        },
         createdAt: 1,
         updatedAt: 2,
       },
@@ -165,6 +172,30 @@ describe('httpApi handlers', () => {
     expect(response.status).toBe(200)
     const json = await response.json()
     expect(json.user.handle).toBe('p')
+  })
+
+  it('cliTelemetrySyncHttp forwards roots and returns ok', async () => {
+    vi.mocked(requireApiTokenUser).mockResolvedValueOnce({ userId: 'users:1' } as never)
+    const runMutation = vi.fn().mockResolvedValue(null)
+    const response = await __handlers.cliTelemetrySyncHandler(
+      makeCtx({ runMutation }),
+      new Request('https://x/api/cli/telemetry/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roots: [
+            {
+              rootId: 'abc',
+              label: '~/skills',
+              skills: [{ slug: 'weather', version: null }],
+            },
+          ],
+        }),
+      }),
+    )
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ ok: true })
+    expect(runMutation).toHaveBeenCalledTimes(1)
   })
 
   it('cliUploadUrlHttp returns uploadUrl', async () => {

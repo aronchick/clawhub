@@ -23,6 +23,7 @@ import type * as lib_webhooks from "../lib/webhooks.js";
 import type * as search from "../search.js";
 import type * as skills from "../skills.js";
 import type * as stars from "../stars.js";
+import type * as telemetry from "../telemetry.js";
 import type * as tokens from "../tokens.js";
 import type * as uploads from "../uploads.js";
 import type * as users from "../users.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   search: typeof search;
   skills: typeof skills;
   stars: typeof stars;
+  telemetry: typeof telemetry;
   tokens: typeof tokens;
   uploads: typeof uploads;
   users: typeof users;

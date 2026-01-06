@@ -92,6 +92,20 @@ export declare const ApiSkillResolveResponseSchema: import("arktype/internal/var
         version: string;
     } | null;
 }, {}>;
+export declare const CliTelemetrySyncRequestSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    roots: {
+        rootId: string;
+        label: string;
+        skills: {
+            slug: string;
+            version?: string | null | undefined;
+        }[];
+    }[];
+}, {}>;
+export type CliTelemetrySyncRequest = (typeof CliTelemetrySyncRequestSchema)[inferred];
+export declare const ApiCliTelemetrySyncResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    ok: true;
+}, {}>;
 export declare const SkillInstallSpecSchema: import("arktype/internal/variants/object.ts").ObjectType<{
     kind: "brew" | "node" | "go" | "uv";
     id?: string | undefined;

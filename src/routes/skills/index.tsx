@@ -5,7 +5,7 @@ import { api } from '../../../convex/_generated/api'
 import type { Doc } from '../../../convex/_generated/dataModel'
 import { SkillCard } from '../../components/SkillCard'
 
-const sortKeys = ['newest', 'downloads', 'stars', 'name', 'updated'] as const
+const sortKeys = ['newest', 'downloads', 'installs', 'stars', 'name', 'updated'] as const
 type SortKey = (typeof sortKeys)[number]
 type SortDir = 'asc' | 'desc'
 
@@ -69,6 +69,8 @@ function SkillsIndex() {
       switch (sort) {
         case 'downloads':
           return (a.stats.downloads - b.stats.downloads) * multiplier
+        case 'installs':
+          return ((a.stats.installsAllTime ?? 0) - (b.stats.installsAllTime ?? 0)) * multiplier
         case 'stars':
           return (a.stats.stars - b.stats.stars) * multiplier
         case 'updated':
@@ -155,6 +157,7 @@ function SkillsIndex() {
               <option value="newest">Newest</option>
               <option value="updated">Recently updated</option>
               <option value="downloads">Downloads</option>
+              <option value="installs">Installs</option>
               <option value="stars">Stars</option>
               <option value="name">Name</option>
             </select>
@@ -209,7 +212,8 @@ function SkillsIndex() {
               summaryFallback="Agent-ready skill pack."
               meta={
                 <div className="stat">
-                  ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads}
+                  ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads} · ⤒{' '}
+                  {skill.stats.installsAllTime ?? 0}
                 </div>
               }
             />
@@ -234,6 +238,7 @@ function SkillsIndex() {
               </div>
               <div className="skills-row-metrics">
                 <span>⤓ {skill.stats.downloads}</span>
+                <span>⤒ {skill.stats.installsAllTime ?? 0}</span>
                 <span>★ {skill.stats.stars}</span>
                 <span>{skill.stats.versions} v</span>
               </div>

@@ -475,7 +475,14 @@ export const insertVersion = internalMutation({
         tags: {},
         softDeletedAt: undefined,
         badges: { redactionApproved: undefined },
-        stats: { downloads: 0, stars: 0, versions: 0, comments: 0 },
+        stats: {
+          downloads: 0,
+          installsCurrent: 0,
+          installsAllTime: 0,
+          stars: 0,
+          versions: 0,
+          comments: 0,
+        },
         createdAt: now,
         updatedAt: now,
       })

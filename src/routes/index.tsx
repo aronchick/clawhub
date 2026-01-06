@@ -198,7 +198,8 @@ function Home() {
                     summaryFallback="A fresh skill bundle."
                     meta={
                       <div className="stat">
-                        ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads}
+                        ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads} · ⤒{' '}
+                        {skill.stats.installsAllTime ?? 0}
                       </div>
                     }
                   />
@@ -221,7 +222,8 @@ function Home() {
                     summaryFallback="Agent-ready skill pack."
                     meta={
                       <div className="stat">
-                        {skill.stats.versions} versions · {skill.stats.downloads} downloads
+                        {skill.stats.versions} versions · ⤓ {skill.stats.downloads} · ⤒{' '}
+                        {skill.stats.installsAllTime ?? 0}
                       </div>
                     }
                   />
