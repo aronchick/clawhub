@@ -227,6 +227,10 @@ code {
   align-items: center;
 }
 
+.theme-toggle {
+  display: inline-flex;
+}
+
 .user-trigger {
   display: inline-flex;
   align-items: center;
@@ -1230,6 +1234,10 @@ code {
 
   .nav-mobile {
     display: inline-flex;
+  }
+
+  .theme-toggle {
+    display: none;
   }
 
   .hero {

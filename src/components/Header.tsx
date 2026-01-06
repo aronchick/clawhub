@@ -28,6 +28,19 @@ export default function Header() {
   const initial = (me?.displayName ?? me?.name ?? handle).charAt(0).toUpperCase()
   const isModerator = me?.role === 'admin' || me?.role === 'moderator'
 
+  const setTheme = (next: 'system' | 'light' | 'dark') => {
+    startThemeTransition({
+      nextTheme: next,
+      currentTheme: mode,
+      setTheme: (value) => {
+        const nextMode = value as 'system' | 'light' | 'dark'
+        applyTheme(nextMode)
+        setMode(nextMode)
+      },
+      context: { element: toggleRef.current },
+    })
+  }
+
   return (
     <header className="navbar">
       <div className="navbar-inner">
@@ -98,41 +111,47 @@ export default function Header() {
                     <Link to="/admin">Admin</Link>
                   </DropdownMenuItem>
                 ) : null}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setTheme('system')}>
+                  <Monitor className="h-4 w-4" aria-hidden="true" />
+                  System
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('light')}>
+                  <Sun className="h-4 w-4" aria-hidden="true" />
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('dark')}>
+                  <Moon className="h-4 w-4" aria-hidden="true" />
+                  Dark
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <ToggleGroup
-            ref={toggleRef}
-            type="single"
-            value={mode}
-            onValueChange={(value) => {
-              if (!value) return
-              startThemeTransition({
-                nextTheme: value as 'system' | 'light' | 'dark',
-                currentTheme: mode,
-                setTheme: (next) => {
-                  const nextMode = next as 'system' | 'light' | 'dark'
-                  applyTheme(nextMode)
-                  setMode(nextMode)
-                },
-                context: { element: toggleRef.current },
-              })
-            }}
-            aria-label="Theme mode"
-          >
-            <ToggleGroupItem value="system" aria-label="System theme">
-              <Monitor className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only">System</span>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="light" aria-label="Light theme">
-              <Sun className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only">Light</span>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="dark" aria-label="Dark theme">
-              <Moon className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only">Dark</span>
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <div className="theme-toggle">
+            <ToggleGroup
+              ref={toggleRef}
+              type="single"
+              value={mode}
+              onValueChange={(value) => {
+                if (!value) return
+                setTheme(value as 'system' | 'light' | 'dark')
+              }}
+              aria-label="Theme mode"
+            >
+              <ToggleGroupItem value="system" aria-label="System theme">
+                <Monitor className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">System</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="light" aria-label="Light theme">
+                <Sun className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">Light</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="dark" aria-label="Dark theme">
+                <Moon className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">Dark</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
           {isAuthenticated && me ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
