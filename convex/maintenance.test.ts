@@ -7,11 +7,17 @@ vi.mock('./_generated/api', () => ({
       getSkillBackfillPageInternal: Symbol('getSkillBackfillPageInternal'),
       applySkillBackfillPatchInternal: Symbol('applySkillBackfillPatchInternal'),
       backfillSkillSummariesInternal: Symbol('backfillSkillSummariesInternal'),
+      getSkillFingerprintBackfillPageInternal: Symbol('getSkillFingerprintBackfillPageInternal'),
+      applySkillFingerprintBackfillPatchInternal: Symbol(
+        'applySkillFingerprintBackfillPatchInternal',
+      ),
+      backfillSkillFingerprintsInternal: Symbol('backfillSkillFingerprintsInternal'),
     },
   },
 }))
 
-const { backfillSkillSummariesInternalHandler } = await import('./maintenance')
+const { backfillSkillFingerprintsInternalHandler, backfillSkillSummariesInternalHandler } =
+  await import('./maintenance')
 
 function makeBlob(text: string) {
   return { text: () => Promise.resolve(text) } as unknown as Blob
@@ -116,5 +122,149 @@ describe('maintenance backfill', () => {
 
     expect(result.stats.missingStorageBlob).toBe(1)
     expect(runMutation).not.toHaveBeenCalled()
+  })
+})
+
+describe('maintenance fingerprint backfill', () => {
+  it('backfills fingerprint field and inserts index entry', async () => {
+    const { hashSkillFiles } = await import('./lib/skills')
+    const expected = await hashSkillFiles([{ path: 'SKILL.md', sha256: 'abc' }])
+
+    const runQuery = vi.fn().mockResolvedValue({
+      items: [
+        {
+          skillId: 'skills:1',
+          versionId: 'skillVersions:1',
+          versionFingerprint: undefined,
+          files: [{ path: 'SKILL.md', sha256: 'abc' }],
+          existingEntries: [],
+        },
+      ],
+      cursor: null,
+      isDone: true,
+    })
+
+    const runMutation = vi.fn().mockResolvedValue({ ok: true })
+
+    const result = await backfillSkillFingerprintsInternalHandler(
+      { runQuery, runMutation } as never,
+      { dryRun: false, batchSize: 10, maxBatches: 1 },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.stats.versionsScanned).toBe(1)
+    expect(result.stats.versionsPatched).toBe(1)
+    expect(result.stats.fingerprintsInserted).toBe(1)
+    expect(result.stats.fingerprintMismatches).toBe(0)
+    expect(runMutation).toHaveBeenCalledTimes(1)
+    expect(runMutation).toHaveBeenCalledWith(expect.anything(), {
+      versionId: 'skillVersions:1',
+      fingerprint: expected,
+      patchVersion: true,
+      replaceEntries: true,
+      existingEntryIds: [],
+    })
+  })
+
+  it('dryRun does not patch', async () => {
+    const runQuery = vi.fn().mockResolvedValue({
+      items: [
+        {
+          skillId: 'skills:1',
+          versionId: 'skillVersions:1',
+          versionFingerprint: undefined,
+          files: [{ path: 'SKILL.md', sha256: 'abc' }],
+          existingEntries: [],
+        },
+      ],
+      cursor: null,
+      isDone: true,
+    })
+
+    const runMutation = vi.fn()
+
+    const result = await backfillSkillFingerprintsInternalHandler(
+      { runQuery, runMutation } as never,
+      { dryRun: true, batchSize: 10, maxBatches: 1 },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.stats.versionsPatched).toBe(1)
+    expect(result.stats.fingerprintsInserted).toBe(1)
+    expect(runMutation).not.toHaveBeenCalled()
+  })
+
+  it('patches missing version fingerprint without touching correct entries', async () => {
+    const { hashSkillFiles } = await import('./lib/skills')
+    const expected = await hashSkillFiles([{ path: 'SKILL.md', sha256: 'abc' }])
+
+    const runQuery = vi.fn().mockResolvedValue({
+      items: [
+        {
+          skillId: 'skills:1',
+          versionId: 'skillVersions:1',
+          versionFingerprint: undefined,
+          files: [{ path: 'SKILL.md', sha256: 'abc' }],
+          existingEntries: [{ id: 'skillVersionFingerprints:1', fingerprint: expected }],
+        },
+      ],
+      cursor: null,
+      isDone: true,
+    })
+
+    const runMutation = vi.fn().mockResolvedValue({ ok: true })
+
+    const result = await backfillSkillFingerprintsInternalHandler(
+      { runQuery, runMutation } as never,
+      { dryRun: false, batchSize: 10, maxBatches: 1 },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.stats.versionsPatched).toBe(1)
+    expect(result.stats.fingerprintsInserted).toBe(0)
+    expect(result.stats.fingerprintMismatches).toBe(0)
+    expect(runMutation).toHaveBeenCalledWith(expect.anything(), {
+      versionId: 'skillVersions:1',
+      fingerprint: expected,
+      patchVersion: true,
+      replaceEntries: false,
+      existingEntryIds: [],
+    })
+  })
+
+  it('replaces mismatched fingerprint entries', async () => {
+    const { hashSkillFiles } = await import('./lib/skills')
+    const expected = await hashSkillFiles([{ path: 'SKILL.md', sha256: 'abc' }])
+
+    const runQuery = vi.fn().mockResolvedValue({
+      items: [
+        {
+          skillId: 'skills:1',
+          versionId: 'skillVersions:1',
+          versionFingerprint: 'wrong',
+          files: [{ path: 'SKILL.md', sha256: 'abc' }],
+          existingEntries: [{ id: 'skillVersionFingerprints:1', fingerprint: 'wrong' }],
+        },
+      ],
+      cursor: null,
+      isDone: true,
+    })
+
+    const runMutation = vi.fn().mockResolvedValue({ ok: true })
+
+    const result = await backfillSkillFingerprintsInternalHandler(
+      { runQuery, runMutation } as never,
+      { dryRun: false, batchSize: 10, maxBatches: 1 },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.stats.fingerprintMismatches).toBe(1)
+    expect(runMutation).toHaveBeenCalledWith(expect.anything(), {
+      versionId: 'skillVersions:1',
+      fingerprint: expected,
+      patchVersion: true,
+      replaceEntries: true,
+      existingEntryIds: ['skillVersionFingerprints:1'],
+    })
   })
 })

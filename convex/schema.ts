@@ -28,6 +28,15 @@ const skills = defineTable({
   displayName: v.string(),
   summary: v.optional(v.string()),
   ownerUserId: v.id('users'),
+  canonicalSkillId: v.optional(v.id('skills')),
+  forkOf: v.optional(
+    v.object({
+      skillId: v.id('skills'),
+      kind: v.union(v.literal('fork'), v.literal('duplicate')),
+      version: v.optional(v.string()),
+      at: v.number(),
+    }),
+  ),
   latestVersionId: v.optional(v.id('skillVersions')),
   tags: v.record(v.string(), v.id('skillVersions')),
   softDeletedAt: v.optional(v.number()),
@@ -59,6 +68,7 @@ const skills = defineTable({
 const skillVersions = defineTable({
   skillId: v.id('skills'),
   version: v.string(),
+  fingerprint: v.optional(v.string()),
   changelog: v.string(),
   changelogSource: v.optional(v.union(v.literal('auto'), v.literal('user'))),
   files: v.array(
@@ -81,6 +91,16 @@ const skillVersions = defineTable({
 })
   .index('by_skill', ['skillId'])
   .index('by_skill_version', ['skillId', 'version'])
+
+const skillVersionFingerprints = defineTable({
+  skillId: v.id('skills'),
+  versionId: v.id('skillVersions'),
+  fingerprint: v.string(),
+  createdAt: v.number(),
+})
+  .index('by_version', ['versionId'])
+  .index('by_fingerprint', ['fingerprint'])
+  .index('by_skill_fingerprint', ['skillId', 'fingerprint'])
 
 const skillEmbeddings = defineTable({
   skillId: v.id('skills'),
@@ -186,6 +206,7 @@ export default defineSchema({
   users,
   skills,
   skillVersions,
+  skillVersionFingerprints,
   skillEmbeddings,
   comments,
   stars,

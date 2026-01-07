@@ -68,6 +68,19 @@ export function SkillDetailPage({
         (typeof canonicalOwner === 'string' && canonicalOwner && canonicalOwner !== ownerHandle)),
   )
 
+  const forkOf = result?.forkOf ?? null
+  const canonical = result?.canonical ?? null
+  const forkOfLabel = forkOf?.kind === 'duplicate' ? 'duplicate of' : 'fork of'
+  const forkOfOwnerHandle = forkOf?.owner?.handle ?? null
+  const canonicalOwnerHandle = canonical?.owner?.handle ?? null
+  const forkOfHref = forkOf?.skill?.slug
+    ? buildSkillHref(forkOfOwnerHandle, forkOf.skill.slug)
+    : null
+  const canonicalHref =
+    canonical?.skill?.slug && canonical.skill.slug !== forkOf?.skill?.slug
+      ? buildSkillHref(canonicalOwnerHandle, canonical.skill.slug)
+      : null
+
   useEffect(() => {
     if (!wantsCanonicalRedirect || !ownerHandle) return
     void navigate({
@@ -145,6 +158,25 @@ export function SkillDetailPage({
             {owner?.handle ? (
               <div className="stat">
                 by <a href={`/u/${owner.handle}`}>@{owner.handle}</a>
+              </div>
+            ) : null}
+            {forkOf && forkOfHref ? (
+              <div className="stat">
+                {forkOfLabel}{' '}
+                <a href={forkOfHref}>
+                  {forkOfOwnerHandle ? `@${forkOfOwnerHandle}/` : ''}
+                  {forkOf.skill.slug}
+                </a>
+                {forkOf.version ? ` (based on ${forkOf.version})` : null}
+              </div>
+            ) : null}
+            {canonicalHref ? (
+              <div className="stat">
+                canonical:{' '}
+                <a href={canonicalHref}>
+                  {canonicalOwnerHandle ? `@${canonicalOwnerHandle}/` : ''}
+                  {canonical?.skill?.slug}
+                </a>
               </div>
             ) : null}
             {skill.batch === 'highlighted' ? <div className="tag">Highlighted</div> : null}
@@ -413,6 +445,11 @@ export function SkillDetailPage({
       </div>
     </main>
   )
+}
+
+function buildSkillHref(ownerHandle: string | null, slug: string) {
+  if (ownerHandle) return `/${ownerHandle}/${slug}`
+  return `/skills/${slug}`
 }
 
 function stripFrontmatter(content: string) {

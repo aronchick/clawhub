@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
+import type { MutationCtx } from './_generated/server'
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { assertRole, requireUser, requireUserFromAction } from './lib/access'
 import { generateChangelogPreview as buildChangelogPreview } from './lib/changelog'
@@ -10,7 +11,7 @@ import {
   publishVersionForUser,
   queueHighlightedWebhook,
 } from './lib/skillPublish'
-import { getFrontmatterValue } from './lib/skills'
+import { getFrontmatterValue, hashSkillFiles } from './lib/skills'
 
 export { publishVersionForUser } from './lib/skillPublish'
 
@@ -29,7 +30,42 @@ export const getBySlug = query({
     if (!skill || skill.softDeletedAt) return null
     const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null
     const owner = await ctx.db.get(skill.ownerUserId)
-    return { skill, latestVersion, owner }
+
+    const forkOfSkill = skill.forkOf?.skillId ? await ctx.db.get(skill.forkOf.skillId) : null
+    const forkOfOwner = forkOfSkill ? await ctx.db.get(forkOfSkill.ownerUserId) : null
+
+    const canonicalSkill = skill.canonicalSkillId ? await ctx.db.get(skill.canonicalSkillId) : null
+    const canonicalOwner = canonicalSkill ? await ctx.db.get(canonicalSkill.ownerUserId) : null
+
+    return {
+      skill,
+      latestVersion,
+      owner,
+      forkOf: forkOfSkill
+        ? {
+            kind: skill.forkOf?.kind ?? 'fork',
+            version: skill.forkOf?.version ?? null,
+            skill: {
+              slug: forkOfSkill.slug,
+              displayName: forkOfSkill.displayName,
+            },
+            owner: {
+              handle: forkOfOwner?.handle ?? forkOfOwner?.name ?? null,
+            },
+          }
+        : null,
+      canonical: canonicalSkill
+        ? {
+            skill: {
+              slug: canonicalSkill.slug,
+              displayName: canonicalSkill.displayName,
+            },
+            owner: {
+              handle: canonicalOwner?.handle ?? canonicalOwner?.name ?? null,
+            },
+          }
+        : null,
+    }
   },
 })
 
@@ -117,6 +153,12 @@ export const publishVersion: ReturnType<typeof action> = action({
     version: v.string(),
     changelog: v.string(),
     tags: v.optional(v.array(v.string())),
+    forkOf: v.optional(
+      v.object({
+        slug: v.string(),
+        version: v.optional(v.string()),
+      }),
+    ),
     files: v.array(
       v.object({
         path: v.string(),
@@ -185,6 +227,69 @@ export const getFileText: ReturnType<typeof action> = action({
 
     const text = await fetchText(ctx, file.storageId)
     return { path: file.path, text, size: file.size, sha256: file.sha256 }
+  },
+})
+
+export const resolveVersionByHash = query({
+  args: { slug: v.string(), hash: v.string() },
+  handler: async (ctx, args) => {
+    const slug = args.slug.trim().toLowerCase()
+    const hash = args.hash.trim().toLowerCase()
+    if (!slug || !/^[a-f0-9]{64}$/.test(hash)) return null
+
+    const skill = await ctx.db
+      .query('skills')
+      .withIndex('by_slug', (q) => q.eq('slug', slug))
+      .unique()
+    if (!skill || skill.softDeletedAt) return null
+
+    const latestVersion = skill.latestVersionId ? await ctx.db.get(skill.latestVersionId) : null
+
+    const fingerprintMatches = await ctx.db
+      .query('skillVersionFingerprints')
+      .withIndex('by_skill_fingerprint', (q) => q.eq('skillId', skill._id).eq('fingerprint', hash))
+      .take(25)
+
+    let match: { version: string } | null = null
+    if (fingerprintMatches.length > 0) {
+      const newest = fingerprintMatches.reduce(
+        (best, entry) => (entry.createdAt > best.createdAt ? entry : best),
+        fingerprintMatches[0] as (typeof fingerprintMatches)[number],
+      )
+      const version = await ctx.db.get(newest.versionId)
+      if (version && !version.softDeletedAt) {
+        match = { version: version.version }
+      }
+    }
+
+    if (!match) {
+      const versions = await ctx.db
+        .query('skillVersions')
+        .withIndex('by_skill', (q) => q.eq('skillId', skill._id))
+        .order('desc')
+        .take(200)
+
+      for (const version of versions) {
+        if (version.softDeletedAt) continue
+        if (typeof version.fingerprint === 'string' && version.fingerprint === hash) {
+          match = { version: version.version }
+          break
+        }
+
+        const fingerprint = await hashSkillFiles(
+          version.files.map((file) => ({ path: file.path, sha256: file.sha256 })),
+        )
+        if (fingerprint === hash) {
+          match = { version: version.version }
+          break
+        }
+      }
+    }
+
+    return {
+      match,
+      latestVersion: latestVersion ? { version: latestVersion.version } : null,
+    }
   },
 })
 
@@ -306,6 +411,13 @@ export const insertVersion = internalMutation({
     changelog: v.string(),
     changelogSource: v.optional(v.union(v.literal('auto'), v.literal('user'))),
     tags: v.optional(v.array(v.string())),
+    fingerprint: v.string(),
+    forkOf: v.optional(
+      v.object({
+        slug: v.string(),
+        version: v.optional(v.string()),
+      }),
+    ),
     files: v.array(
       v.object({
         path: v.string(),
@@ -338,12 +450,52 @@ export const insertVersion = internalMutation({
 
     const now = Date.now()
     if (!skill) {
+      const forkOfSlug = args.forkOf?.slug.trim().toLowerCase() || ''
+      const forkOfVersion = args.forkOf?.version?.trim() || undefined
+
+      let canonicalSkillId: Id<'skills'> | undefined
+      let forkOf:
+        | {
+            skillId: Id<'skills'>
+            kind: 'fork' | 'duplicate'
+            version?: string
+            at: number
+          }
+        | undefined
+
+      if (forkOfSlug) {
+        const upstream = await ctx.db
+          .query('skills')
+          .withIndex('by_slug', (q) => q.eq('slug', forkOfSlug))
+          .unique()
+        if (!upstream || upstream.softDeletedAt) throw new Error('Upstream skill not found')
+        canonicalSkillId = upstream.canonicalSkillId ?? upstream._id
+        forkOf = {
+          skillId: upstream._id,
+          kind: 'fork',
+          version: forkOfVersion,
+          at: now,
+        }
+      } else {
+        const match = await findCanonicalSkillForFingerprint(ctx, args.fingerprint)
+        if (match) {
+          canonicalSkillId = match.canonicalSkillId ?? match._id
+          forkOf = {
+            skillId: match._id,
+            kind: 'duplicate',
+            at: now,
+          }
+        }
+      }
+
       const summary = getFrontmatterValue(args.parsed.frontmatter, 'description')
       const skillId = await ctx.db.insert('skills', {
         slug: args.slug,
         displayName: args.displayName,
         summary: summary ?? undefined,
         ownerUserId: userId,
+        canonicalSkillId,
+        forkOf,
         latestVersionId: undefined,
         tags: {},
         softDeletedAt: undefined,
@@ -375,6 +527,7 @@ export const insertVersion = internalMutation({
     const versionId = await ctx.db.insert('skillVersions', {
       skillId: skill._id,
       version: args.version,
+      fingerprint: args.fingerprint,
       changelog: args.changelog,
       changelogSource: args.changelogSource,
       files: args.files,
@@ -426,6 +579,13 @@ export const insertVersion = internalMutation({
         })
       }
     }
+
+    await ctx.db.insert('skillVersionFingerprints', {
+      skillId: skill._id,
+      versionId,
+      fingerprint: args.fingerprint,
+      createdAt: now,
+    })
 
     return { skillId: skill._id, versionId, embeddingId }
   },
@@ -491,4 +651,22 @@ function visibilityFor(isLatest: boolean, isApproved: boolean) {
   if (isLatest) return 'latest'
   if (isApproved) return 'archived-approved'
   return 'archived'
+}
+
+async function findCanonicalSkillForFingerprint(
+  ctx: { db: MutationCtx['db'] },
+  fingerprint: string,
+) {
+  const matches = await ctx.db
+    .query('skillVersionFingerprints')
+    .withIndex('by_fingerprint', (q) => q.eq('fingerprint', fingerprint))
+    .take(25)
+
+  for (const entry of matches) {
+    const skill = await ctx.db.get(entry.skillId)
+    if (!skill || skill.softDeletedAt) continue
+    return skill
+  }
+
+  return null
 }

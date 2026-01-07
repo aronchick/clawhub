@@ -8,6 +8,7 @@ import { generateEmbedding } from './embeddings'
 import {
   buildEmbeddingText,
   getFrontmatterMetadata,
+  hashSkillFiles,
   isTextFile,
   parseClawdisMetadata,
   parseFrontmatter,
@@ -30,6 +31,7 @@ export type PublishVersionArgs = {
   version: string
   changelog: string
   tags?: string[]
+  forkOf?: { slug: string; version?: string }
   files: Array<{
     path: string
     size: number
@@ -98,6 +100,13 @@ export async function publishVersionForUser(
     otherFiles,
   })
 
+  const fingerprint = await hashSkillFiles(
+    sanitizedFiles.map((file) => ({
+      path: file.path ?? '',
+      sha256: file.sha256,
+    })),
+  )
+
   const changelogPromise =
     changelogSource === 'user'
       ? Promise.resolve(suppliedChangelog)
@@ -125,6 +134,13 @@ export async function publishVersionForUser(
     changelog: changelogText,
     changelogSource,
     tags: args.tags?.map((tag) => tag.trim()).filter(Boolean),
+    fingerprint,
+    forkOf: args.forkOf
+      ? {
+          slug: args.forkOf.slug.trim().toLowerCase(),
+          version: args.forkOf.version?.trim() || undefined,
+        }
+      : undefined,
     files: sanitizedFiles.map((file) => ({
       ...file,
       path: file.path ?? '',

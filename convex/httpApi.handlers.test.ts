@@ -125,22 +125,10 @@ describe('httpApi handlers', () => {
 
   it('resolveSkillVersionHttp returns match and latestVersion', async () => {
     const matchHash = await hashSkillFiles([{ path: 'SKILL.md', sha256: 'abc' }])
-    const runQuery = vi
-      .fn()
-      .mockResolvedValueOnce({
-        skill: {
-          _id: 's',
-          slug: 'demo',
-          displayName: 'Demo',
-          tags: {},
-          stats: {},
-          createdAt: 1,
-          updatedAt: 2,
-        },
-        latestVersion: { version: '2.0.0', createdAt: 3, changelog: 'c' },
-        owner: null,
-      })
-      .mockResolvedValueOnce([{ version: '1.0.0', files: [{ path: 'SKILL.md', sha256: 'abc' }] }])
+    const runQuery = vi.fn().mockResolvedValueOnce({
+      match: { version: '1.0.0' },
+      latestVersion: { version: '2.0.0' },
+    })
 
     const response = await __handlers.resolveSkillVersionHandler(
       makeCtx({ runQuery }),

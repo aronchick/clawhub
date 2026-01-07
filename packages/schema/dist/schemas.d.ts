@@ -70,6 +70,10 @@ export declare const CliPublishRequestSchema: import("arktype/internal/variants/
         contentType?: string | undefined;
     }[];
     tags?: string[] | undefined;
+    forkOf?: {
+        slug: string;
+        version?: string | undefined;
+    } | undefined;
 }, {}>;
 export type CliPublishRequest = (typeof CliPublishRequestSchema)[inferred];
 export declare const ApiCliPublishResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{

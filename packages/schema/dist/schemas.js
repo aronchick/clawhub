@@ -59,6 +59,10 @@ export const CliPublishRequestSchema = type({
     version: 'string',
     changelog: 'string',
     tags: 'string[]?',
+    forkOf: type({
+        slug: 'string',
+        version: 'string?',
+    }).optional(),
     files: CliPublishFileSchema.array(),
 });
 export const ApiCliPublishResponseSchema = type({

@@ -11,7 +11,6 @@ import type { Id } from './_generated/dataModel'
 import type { ActionCtx } from './_generated/server'
 import { httpAction } from './_generated/server'
 import { requireApiTokenUser } from './lib/apiTokenAuth'
-import { hashSkillFiles } from './lib/skills'
 import { publishVersionForUser } from './skills'
 
 type SearchSkillEntry = {
@@ -112,27 +111,10 @@ async function resolveSkillVersionHandler(ctx: ActionCtx, request: Request) {
   if (!slug || !hash) return text('Missing slug or hash', 400)
   if (!/^[a-f0-9]{64}$/.test(hash)) return text('Invalid hash', 400)
 
-  const result = (await ctx.runQuery(api.skills.getBySlug, { slug })) as GetBySlugResult
-  if (!result?.skill) return text('Skill not found', 404)
+  const resolved = await ctx.runQuery(api.skills.resolveVersionByHash, { slug, hash })
+  if (!resolved) return text('Skill not found', 404)
 
-  const versions = (await ctx.runQuery(api.skills.listVersions, {
-    skillId: result.skill._id,
-    limit: 200,
-  })) as Array<{ version: string; files: Array<{ path: string; sha256: string }> }>
-  let match: { version: string } | null = null
-  for (const version of versions) {
-    const fingerprint = await hashSkillFiles(version.files)
-    if (fingerprint === hash) {
-      match = { version: version.version }
-      break
-    }
-  }
-
-  return json({
-    slug,
-    match,
-    latestVersion: result.latestVersion ? { version: result.latestVersion.version } : null,
-  })
+  return json({ slug, match: resolved.match, latestVersion: resolved.latestVersion })
 }
 
 export const resolveSkillVersionHttp = httpAction(resolveSkillVersionHandler)
@@ -291,6 +273,12 @@ function parsePublishBody(body: unknown) {
     version: parsed.version,
     changelog: parsed.changelog,
     tags,
+    forkOf: parsed.forkOf
+      ? {
+          slug: parsed.forkOf.slug,
+          version: parsed.forkOf.version ?? undefined,
+        }
+      : undefined,
     files: parsed.files.map((file) => ({
       ...file,
       storageId: file.storageId as Id<'_storage'>,
