@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAction, useConvexAuth, useMutation } from 'convex/react'
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
+import { useAction, useConvexAuth, useMutation, useQuery } from 'convex/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import semver from 'semver'
 import { api } from '../../convex/_generated/api'
@@ -16,17 +16,25 @@ import {
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 export const Route = createFileRoute('/upload')({
+  validateSearch: (search) => ({
+    updateSlug: typeof search.updateSlug === 'string' ? search.updateSlug : undefined,
+  }),
   component: Upload,
 })
 
 export function Upload() {
   const { isAuthenticated } = useConvexAuth()
+  const { updateSlug } = useSearch({ from: '/upload' })
   const generateUploadUrl = useMutation(api.uploads.generateUploadUrl)
   const publishVersion = useAction(api.skills.publishVersion)
   const generateChangelogPreview = useAction(api.skills.generateChangelogPreview)
+  const existingSkill = useQuery(
+    api.skills.getBySlug,
+    updateSlug ? { slug: updateSlug } : 'skip',
+  )
   const [hasAttempted, setHasAttempted] = useState(false)
   const [files, setFiles] = useState<File[]>([])
-  const [slug, setSlug] = useState('')
+  const [slug, setSlug] = useState(updateSlug ?? '')
   const [displayName, setDisplayName] = useState('')
   const [version, setVersion] = useState('1.0.0')
   const [tags, setTags] = useState('latest')
@@ -78,6 +86,14 @@ export function Upload() {
   const trimmedSlug = slug.trim()
   const trimmedName = displayName.trim()
   const trimmedChangelog = changelog.trim()
+
+  useEffect(() => {
+    if (!existingSkill?.skill || !existingSkill?.latestVersion) return
+    setSlug(existingSkill.skill.slug)
+    setDisplayName(existingSkill.skill.displayName)
+    const nextVersion = semver.inc(existingSkill.latestVersion.version, 'patch')
+    if (nextVersion) setVersion(nextVersion)
+  }, [existingSkill])
 
   useEffect(() => {
     if (changelogTouchedRef.current) return

@@ -2271,3 +2271,141 @@ html.theme-transition::view-transition-new(theme) {
     animation: none !important;
   }
 }
+
+/* Dashboard styles */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  gap: 16px;
+}
+
+.dashboard-empty-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--ink-soft);
+}
+
+.dashboard-empty h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.dashboard-empty p {
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-skill-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  transition: border-color 0.15s ease;
+}
+
+.dashboard-skill-card:hover {
+  border-color: rgba(255, 107, 74, 0.45);
+}
+
+.dashboard-skill-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-skill-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.dashboard-skill-name:hover {
+  color: var(--accent);
+}
+
+.dashboard-skill-slug {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-left: 8px;
+}
+
+.dashboard-skill-description {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin: 8px 0 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dashboard-skill-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.dashboard-skill-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  gap: 4px;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.btn-ghost:hover {
+  background: var(--surface-muted);
+  border-color: rgba(255, 107, 74, 0.45);
+}
+
+@media (max-width: 640px) {
+  .dashboard-skill-card {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dashboard-skill-actions {
+    width: 100%;
+  }
+
+  .dashboard-skill-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
