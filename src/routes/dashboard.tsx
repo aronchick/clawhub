@@ -10,10 +10,7 @@ export const Route = createFileRoute('/dashboard')({
 
 function Dashboard() {
   const me = useQuery(api.users.me)
-  const mySkills = useQuery(
-    api.skills.list,
-    me?._id ? { ownerUserId: me._id, limit: 100 } : 'skip',
-  )
+  const mySkills = useQuery(api.skills.list, me?._id ? { ownerUserId: me._id, limit: 100 } : 'skip')
 
   if (!me) {
     return (
@@ -59,13 +56,7 @@ function Dashboard() {
   )
 }
 
-function SkillCard({
-  skill,
-  ownerHandle,
-}: {
-  skill: Doc<'skills'>
-  ownerHandle: string | null
-}) {
+function SkillCard({ skill, ownerHandle }: { skill: Doc<'skills'>; ownerHandle: string | null }) {
   return (
     <div className="dashboard-skill-card">
       <div className="dashboard-skill-info">
@@ -83,9 +74,7 @@ function SkillCard({
           </Link>
         )}
         <span className="dashboard-skill-slug">/{skill.slug}</span>
-        {skill.summary && (
-          <p className="dashboard-skill-description">{skill.summary}</p>
-        )}
+        {skill.summary && <p className="dashboard-skill-description">{skill.summary}</p>}
         <div className="dashboard-skill-stats">
           <span>⤓ {skill.stats.downloads}</span>
           <span>★ {skill.stats.stars}</span>
@@ -93,11 +82,7 @@ function SkillCard({
         </div>
       </div>
       <div className="dashboard-skill-actions">
-        <Link
-          to="/upload"
-          search={{ updateSlug: skill.slug }}
-          className="btn btn-sm"
-        >
+        <Link to="/upload" search={{ updateSlug: skill.slug }} className="btn btn-sm">
           <Upload className="h-3 w-3" aria-hidden="true" />
           New Version
         </Link>

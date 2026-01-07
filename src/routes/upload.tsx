@@ -28,10 +28,7 @@ export function Upload() {
   const generateUploadUrl = useMutation(api.uploads.generateUploadUrl)
   const publishVersion = useAction(api.skills.publishVersion)
   const generateChangelogPreview = useAction(api.skills.generateChangelogPreview)
-  const existingSkill = useQuery(
-    api.skills.getBySlug,
-    updateSlug ? { slug: updateSlug } : 'skip',
-  )
+  const existingSkill = useQuery(api.skills.getBySlug, updateSlug ? { slug: updateSlug } : 'skip')
   const [hasAttempted, setHasAttempted] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [slug, setSlug] = useState(updateSlug ?? '')
