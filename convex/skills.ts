@@ -219,7 +219,10 @@ export const getFileText: ReturnType<typeof action> = action({
     if (!version) throw new ConvexError('Version not found')
 
     const normalizedPath = args.path.trim()
-    const file = version.files.find((entry) => entry.path === normalizedPath)
+    const normalizedLower = normalizedPath.toLowerCase()
+    const file =
+      version.files.find((entry) => entry.path === normalizedPath) ??
+      version.files.find((entry) => entry.path.toLowerCase() === normalizedLower)
     if (!file) throw new ConvexError('File not found')
     if (file.size > MAX_DIFF_FILE_BYTES) {
       throw new ConvexError('File exceeds 200KB limit')

@@ -1226,6 +1226,12 @@ code {
   gap: 16px;
 }
 
+.diff-card-embedded {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
 .diff-header {
   display: flex;
   justify-content: space-between;
@@ -1407,6 +1413,88 @@ code {
   border: 1px solid var(--line);
 }
 
+.tab-card {
+  gap: 18px;
+}
+
+.tab-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+  align-self: flex-start;
+}
+
+.tab-button {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 650;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.tab-button.is-active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 8px 18px rgba(29, 26, 23, 0.12);
+}
+
+.tab-body {
+  display: grid;
+  gap: 20px;
+}
+
+.file-list {
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.file-list-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.file-list-body {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.file-path {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.file-meta {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
 .comment-form {
   display: grid;
   gap: 12px;
@@ -1434,6 +1522,38 @@ code {
   justify-self: start;
   padding: 8px 14px;
   font-size: 0.9rem;
+}
+
+.sidebar-card {
+  gap: 20px;
+}
+
+.sidebar-section {
+  display: grid;
+  gap: 12px;
+}
+
+.sidebar-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--line);
+  opacity: 0.6;
+}
+
+.sidebar-scroll {
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.sidebar-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .version-list {

@@ -18,6 +18,7 @@ import { ClientOnly } from './ClientOnly'
 type SkillDiffCardProps = {
   skill: Doc<'skills'>
   versions: Doc<'skillVersions'>[]
+  variant?: 'card' | 'embedded'
 }
 
 type VersionOption = {
@@ -36,7 +37,7 @@ type SizeWarning = {
 
 const EMPTY_DIFF_TEXT = ''
 
-export function SkillDiffCard({ skill, versions }: SkillDiffCardProps) {
+export function SkillDiffCard({ skill, versions, variant = 'card' }: SkillDiffCardProps) {
   const getFileText = useAction(api.skills.getFileText)
   const monaco = useMonaco()
   const [viewMode, setViewMode] = useState<'split' | 'inline'>('split')
@@ -240,8 +241,10 @@ export function SkillDiffCard({ skill, versions }: SkillDiffCardProps) {
   const selectionReady = Boolean(leftVersionId && rightVersionId)
   const fileSelected = Boolean(selectedItem)
 
+  const containerClass = variant === 'card' ? 'card diff-card' : 'diff-card diff-card-embedded'
+
   return (
-    <div className="card diff-card">
+    <div className={containerClass}>
       <div className="diff-header">
         <div>
           <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>

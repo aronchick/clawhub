@@ -33,6 +33,7 @@ export function SkillDetailPage({
   const [comment, setComment] = useState('')
   const [tagName, setTagName] = useState('latest')
   const [tagVersionId, setTagVersionId] = useState<Id<'skillVersions'> | ''>('')
+  const [activeTab, setActiveTab] = useState<'files' | 'compare'>('files')
 
   const isLoadingSkill = result === undefined
   const skill = result?.skill
@@ -101,6 +102,7 @@ export function SkillDetailPage({
     if (!readme) return null
     return stripFrontmatter(readme)
   }, [readme])
+  const latestFiles = latestVersion?.files ?? []
 
   useEffect(() => {
     if (!latestVersion) return
@@ -210,17 +212,62 @@ export function SkillDetailPage({
               ) : null}
             </div>
           </div>
-          <div className="card">
-            <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
-              SKILL.md
-            </h2>
-            <div className="markdown">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {readmeContent ?? 'Loading…'}
-              </ReactMarkdown>
+          <div className="card tab-card">
+            <div className="tab-header">
+              <button
+                className={`tab-button${activeTab === 'files' ? ' is-active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab('files')}
+              >
+                Files
+              </button>
+              <button
+                className={`tab-button${activeTab === 'compare' ? ' is-active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab('compare')}
+              >
+                Compare
+              </button>
             </div>
+            {activeTab === 'files' ? (
+              <div className="tab-body">
+                <div>
+                  <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+                    SKILL.md
+                  </h2>
+                  <div className="markdown">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {readmeContent ?? 'Loading…'}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+                <div className="file-list">
+                  <div className="file-list-header">
+                    <h3 className="section-title" style={{ fontSize: '1.05rem', margin: 0 }}>
+                      Files
+                    </h3>
+                    <span className="section-subtitle" style={{ margin: 0 }}>
+                      {latestFiles.length} total
+                    </span>
+                  </div>
+                  <div className="file-list-body">
+                    {latestFiles.length === 0 ? (
+                      <div className="stat">No files available.</div>
+                    ) : (
+                      latestFiles.map((file) => (
+                        <div key={file.path} className="file-row">
+                          <span className="file-path">{file.path}</span>
+                          <span className="file-meta">{formatBytes(file.size)}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : skill ? (
+              <SkillDiffCard skill={skill} versions={diffVersions ?? []} variant="embedded" />
+            ) : null}
           </div>
-          {skill ? <SkillDiffCard skill={skill} versions={diffVersions ?? []} /> : null}
           <div className="card">
             <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
               Comments
@@ -284,162 +331,169 @@ export function SkillDetailPage({
           </div>
         </div>
         <div style={{ display: 'grid', gap: 16 }}>
-          {clawdis ? (
-            <div className="card">
-              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                Requirements
-              </h3>
-              <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
-                {clawdis.emoji ? <div className="tag">{clawdis.emoji} Clawdis</div> : null}
-                {osLabels.length ? (
-                  <div className="stat">
-                    <strong>OS</strong>
-                    <span>{osLabels.join(' · ')}</span>
-                  </div>
-                ) : null}
-                {requirements?.bins?.length ? (
-                  <div className="stat">
-                    <strong>Bins</strong>
-                    <span>{requirements.bins.join(', ')}</span>
-                  </div>
-                ) : null}
-                {requirements?.anyBins?.length ? (
-                  <div className="stat">
-                    <strong>Any bin</strong>
-                    <span>{requirements.anyBins.join(', ')}</span>
-                  </div>
-                ) : null}
-                {requirements?.env?.length ? (
-                  <div className="stat">
-                    <strong>Env</strong>
-                    <span>{requirements.env.join(', ')}</span>
-                  </div>
-                ) : null}
-                {requirements?.config?.length ? (
-                  <div className="stat">
-                    <strong>Config</strong>
-                    <span>{requirements.config.join(', ')}</span>
-                  </div>
-                ) : null}
-                {clawdis.primaryEnv ? (
-                  <div className="stat">
-                    <strong>Primary env</strong>
-                    <span>{clawdis.primaryEnv}</span>
+          <div className="card sidebar-card">
+            {clawdis ? (
+              <div className="sidebar-section">
+                <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+                  Requirements
+                </h3>
+                <div className="sidebar-stack">
+                  {clawdis.emoji ? <div className="tag">{clawdis.emoji} Clawdis</div> : null}
+                  {osLabels.length ? (
+                    <div className="stat">
+                      <strong>OS</strong>
+                      <span>{osLabels.join(' · ')}</span>
+                    </div>
+                  ) : null}
+                  {requirements?.bins?.length ? (
+                    <div className="stat">
+                      <strong>Bins</strong>
+                      <span>{requirements.bins.join(', ')}</span>
+                    </div>
+                  ) : null}
+                  {requirements?.anyBins?.length ? (
+                    <div className="stat">
+                      <strong>Any bin</strong>
+                      <span>{requirements.anyBins.join(', ')}</span>
+                    </div>
+                  ) : null}
+                  {requirements?.env?.length ? (
+                    <div className="stat">
+                      <strong>Env</strong>
+                      <span>{requirements.env.join(', ')}</span>
+                    </div>
+                  ) : null}
+                  {requirements?.config?.length ? (
+                    <div className="stat">
+                      <strong>Config</strong>
+                      <span>{requirements.config.join(', ')}</span>
+                    </div>
+                  ) : null}
+                  {clawdis.primaryEnv ? (
+                    <div className="stat">
+                      <strong>Primary env</strong>
+                      <span>{clawdis.primaryEnv}</span>
+                    </div>
+                  ) : null}
+                </div>
+                {installSpecs.length ? (
+                  <div className="sidebar-stack">
+                    <div className="section-subtitle" style={{ margin: 0 }}>
+                      Install
+                    </div>
+                    {installSpecs.map((spec, index) => {
+                      const command = formatInstallCommand(spec)
+                      return (
+                        <div key={`${spec.id ?? spec.kind}-${index}`} className="stat">
+                          <div>
+                            <strong>{spec.label ?? formatInstallLabel(spec)}</strong>
+                            {spec.bins?.length ? (
+                              <div style={{ color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+                                Bins: {spec.bins.join(', ')}
+                              </div>
+                            ) : null}
+                            {command ? <code>{command}</code> : null}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : null}
               </div>
-              {installSpecs.length ? (
-                <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
-                  <div className="section-subtitle" style={{ margin: 0 }}>
-                    Install
-                  </div>
-                  {installSpecs.map((spec, index) => {
-                    const command = formatInstallCommand(spec)
-                    return (
-                      <div key={`${spec.id ?? spec.kind}-${index}`} className="stat">
+            ) : null}
+            <div className="sidebar-divider" />
+            <div className="sidebar-section">
+              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+                Versions
+              </h3>
+              <div className="sidebar-scroll">
+                <div className="version-list">
+                  {(versions ?? []).map((version) => (
+                    <div key={version._id} className="version-row">
+                      <div className="version-info">
                         <div>
-                          <strong>{spec.label ?? formatInstallLabel(spec)}</strong>
-                          {spec.bins?.length ? (
-                            <div style={{ color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
-                              Bins: {spec.bins.join(', ')}
-                            </div>
+                          v{version.version} · {new Date(version.createdAt).toLocaleDateString()}
+                          {version.changelogSource === 'auto' ? (
+                            <span style={{ color: 'var(--ink-soft)' }}> · auto</span>
                           ) : null}
-                          {command ? <code>{command}</code> : null}
+                        </div>
+                        <div style={{ color: '#5c554e', whiteSpace: 'pre-wrap' }}>
+                          {version.changelog}
                         </div>
                       </div>
-                    )
-                  })}
+                      <div className="version-actions">
+                        <a
+                          className="btn version-zip"
+                          href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}&version=${version.version}`}
+                        >
+                          Zip
+                        </a>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            </div>
+            <div className="sidebar-divider" />
+            <div className="sidebar-section">
+              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+                Tags
+              </h3>
+              <div className="sidebar-stack">
+                {tagEntries.map(([tag, versionId]) => (
+                  <div key={tag} className="stat">
+                    <strong>{tag}</strong>
+                    <span>{versionById.get(versionId)?.version ?? versionId}</span>
+                  </div>
+                ))}
+              </div>
+              {canManage ? (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    if (!tagName.trim() || !tagVersionId) return
+                    void updateTags({
+                      skillId: skill._id,
+                      tags: [{ tag: tagName.trim(), versionId: tagVersionId }],
+                    })
+                  }}
+                  className="sidebar-form"
+                >
+                  <input
+                    className="search-input"
+                    value={tagName}
+                    onChange={(event) => setTagName(event.target.value)}
+                    placeholder="latest"
+                  />
+                  <select
+                    className="search-input"
+                    value={tagVersionId ?? ''}
+                    onChange={(event) => setTagVersionId(event.target.value as Id<'skillVersions'>)}
+                  >
+                    {(versions ?? []).map((version) => (
+                      <option key={version._id} value={version._id}>
+                        v{version.version}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="btn" type="submit">
+                    Update tag
+                  </button>
+                </form>
               ) : null}
             </div>
-          ) : null}
-          <div className="card">
-            <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-              Versions
-            </h3>
-            <div className="version-list">
-              {(versions ?? []).map((version) => (
-                <div key={version._id} className="version-row">
-                  <div className="version-info">
-                    <div>
-                      v{version.version} · {new Date(version.createdAt).toLocaleDateString()}
-                      {version.changelogSource === 'auto' ? (
-                        <span style={{ color: 'var(--ink-soft)' }}> · auto</span>
-                      ) : null}
-                    </div>
-                    <div style={{ color: '#5c554e', whiteSpace: 'pre-wrap' }}>
-                      {version.changelog}
-                    </div>
-                  </div>
-                  <div className="version-actions">
-                    <a
-                      className="btn version-zip"
-                      href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}&version=${version.version}`}
-                    >
-                      Zip
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-              Tags
-            </h3>
-            <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-              {tagEntries.map(([tag, versionId]) => (
-                <div key={tag} className="stat">
-                  <strong>{tag}</strong>
-                  <span>{versionById.get(versionId)?.version ?? versionId}</span>
-                </div>
-              ))}
-            </div>
-            {canManage ? (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (!tagName.trim() || !tagVersionId) return
-                  void updateTags({
-                    skillId: skill._id,
-                    tags: [{ tag: tagName.trim(), versionId: tagVersionId }],
-                  })
-                }}
-                style={{ display: 'grid', gap: 10, marginTop: 16 }}
+            <div className="sidebar-divider" />
+            <div className="sidebar-section">
+              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
+                Download
+              </h3>
+              <a
+                className="btn btn-primary"
+                href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}`}
               >
-                <input
-                  className="search-input"
-                  value={tagName}
-                  onChange={(event) => setTagName(event.target.value)}
-                  placeholder="latest"
-                />
-                <select
-                  className="search-input"
-                  value={tagVersionId ?? ''}
-                  onChange={(event) => setTagVersionId(event.target.value as Id<'skillVersions'>)}
-                >
-                  {(versions ?? []).map((version) => (
-                    <option key={version._id} value={version._id}>
-                      v{version.version}
-                    </option>
-                  ))}
-                </select>
-                <button className="btn" type="submit">
-                  Update tag
-                </button>
-              </form>
-            ) : null}
-          </div>
-          <div className="card">
-            <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-              Download
-            </h3>
-            <a
-              className="btn btn-primary"
-              href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}`}
-            >
-              Download zip
-            </a>
+                Download zip
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -496,4 +550,17 @@ function formatInstallCommand(spec: SkillInstallSpec) {
     return `uv tool install ${spec.package}`
   }
   return null
+}
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes)) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  const units = ['KB', 'MB', 'GB']
+  let value = bytes / 1024
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex += 1
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`
 }
