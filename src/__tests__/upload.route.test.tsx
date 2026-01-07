@@ -7,14 +7,17 @@ import { Upload } from '../routes/upload'
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (config: { component: unknown }) => config,
   useNavigate: () => vi.fn(),
+  useSearch: () => ({ updateSlug: undefined }),
 }))
 
 const generateUploadUrl = vi.fn()
 const publishVersion = vi.fn()
 const fetchMock = vi.fn()
+const useQueryMock = vi.fn()
 
 vi.mock('convex/react', () => ({
   useConvexAuth: () => ({ isAuthenticated: true }),
+  useQuery: (...args: unknown[]) => useQueryMock(...args),
   useMutation: () => generateUploadUrl,
   useAction: () => publishVersion,
 }))
@@ -24,6 +27,11 @@ describe('Upload route', () => {
     generateUploadUrl.mockReset()
     publishVersion.mockReset()
     fetchMock.mockReset()
+    useQueryMock.mockReset()
+    useQueryMock.mockImplementation((_fn: unknown, args: unknown) => {
+      if (args === 'skip') return undefined
+      return null
+    })
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ storageId: 'storage-id' }),
