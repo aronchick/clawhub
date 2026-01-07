@@ -93,9 +93,7 @@ describe('skills', () => {
     await writeFile(join(workdir, 'SKILL.md'), 'hi', 'utf8')
     await writeFile(join(workdir, 'config.env'), 'TOKEN=demo', 'utf8')
     const files = await listTextFiles(workdir)
-    expect(files.find((file) => file.relPath === 'config.env')?.contentType).toBe(
-      'text/plain',
-    )
+    expect(files.find((file) => file.relPath === 'config.env')?.contentType).toBe('text/plain')
   })
 
   it('hashes skill files deterministically', async () => {
@@ -133,9 +131,7 @@ describe('skills', () => {
       'image.png': strToU8('nope'),
     })
     const { files } = hashSkillZip(new Uint8Array(zip))
-    expect(files).toEqual([
-      { path: 'SKILL.md', sha256: sha256Hex(strToU8('hello')), size: 5 },
-    ])
+    expect(files).toEqual([{ path: 'SKILL.md', sha256: sha256Hex(strToU8('hello')), size: 5 }])
   })
 
   it('builds fingerprints from valid entries only', () => {
