@@ -33,7 +33,7 @@ export function SkillDetailPage({
   const [comment, setComment] = useState('')
   const [tagName, setTagName] = useState('latest')
   const [tagVersionId, setTagVersionId] = useState<Id<'skillVersions'> | ''>('')
-  const [activeTab, setActiveTab] = useState<'files' | 'compare'>('files')
+  const [activeTab, setActiveTab] = useState<'files' | 'compare' | 'versions'>('files')
 
   const isLoadingSkill = result === undefined
   const skill = result?.skill
@@ -41,7 +41,7 @@ export function SkillDetailPage({
   const latestVersion = result?.latestVersion
   const versions = useQuery(
     api.skills.listVersions,
-    skill ? { skillId: skill._id, limit: 10 } : 'skip',
+    skill ? { skillId: skill._id, limit: 50 } : 'skip',
   ) as Doc<'skillVersions'>[] | undefined
   const diffVersions = useQuery(
     api.skills.listVersions,
@@ -92,7 +92,7 @@ export function SkillDetailPage({
   }, [navigate, ownerHandle, slug, wantsCanonicalRedirect])
 
   const versionById = new Map<Id<'skillVersions'>, Doc<'skillVersions'>>(
-    (versions ?? []).map((version) => [version._id, version]),
+    (diffVersions ?? versions ?? []).map((version) => [version._id, version]),
   )
   const clawdis = (latestVersion?.parsed as { clawdis?: ClawdisSkillMetadata } | undefined)?.clawdis
   const osLabels = useMemo(() => formatOsList(clawdis?.os), [clawdis?.os])
@@ -145,242 +145,191 @@ export function SkillDetailPage({
 
   return (
     <main className="section">
-      <div className="skill-detail-grid">
-        <div style={{ display: 'grid', gap: 16 }}>
-          <div className="card">
-            <h1 className="section-title" style={{ margin: 0 }}>
-              {skill.displayName}
-            </h1>
-            <p className="section-subtitle">{skill.summary ?? 'No summary provided.'}</p>
-            <div className="stat">
-              ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads} · ⤒{' '}
-              {skill.stats.installsCurrent ?? 0} current · {skill.stats.installsAllTime ?? 0}{' '}
-              all-time · v{latestVersion?.version}
-            </div>
-            {owner?.handle ? (
+      <div className="skill-detail-stack">
+        <div className="card skill-hero">
+          <div className="skill-hero-header">
+            <div className="skill-hero-title">
+              <h1 className="section-title" style={{ margin: 0 }}>
+                {skill.displayName}
+              </h1>
+              <p className="section-subtitle">{skill.summary ?? 'No summary provided.'}</p>
               <div className="stat">
-                by <a href={`/u/${owner.handle}`}>@{owner.handle}</a>
+                ⭐ {skill.stats.stars} · ⤓ {skill.stats.downloads} · ⤒{' '}
+                {skill.stats.installsCurrent ?? 0} current · {skill.stats.installsAllTime ?? 0}{' '}
+                all-time
               </div>
-            ) : null}
-            {forkOf && forkOfHref ? (
-              <div className="stat">
-                {forkOfLabel}{' '}
-                <a href={forkOfHref}>
-                  {forkOfOwnerHandle ? `@${forkOfOwnerHandle}/` : ''}
-                  {forkOf.skill.slug}
-                </a>
-                {forkOf.version ? ` (based on ${forkOf.version})` : null}
-              </div>
-            ) : null}
-            {canonicalHref ? (
-              <div className="stat">
-                canonical:{' '}
-                <a href={canonicalHref}>
-                  {canonicalOwnerHandle ? `@${canonicalOwnerHandle}/` : ''}
-                  {canonical?.skill?.slug}
-                </a>
-              </div>
-            ) : null}
-            {skill.batch === 'highlighted' ? <div className="tag">Highlighted</div> : null}
-            <div className="skill-actions">
-              {isAuthenticated ? (
-                <button
-                  className={`star-toggle${isStarred ? ' is-active' : ''}`}
-                  type="button"
-                  onClick={() => void toggleStar({ skillId: skill._id })}
-                  aria-label={isStarred ? 'Unstar skill' : 'Star skill'}
-                >
-                  <span aria-hidden="true">★</span>
-                </button>
-              ) : null}
-              {canHighlight ? (
-                <button
-                  className={`highlight-toggle${skill.batch === 'highlighted' ? ' is-active' : ''}`}
-                  type="button"
-                  onClick={() =>
-                    void setBatch({
-                      skillId: skill._id,
-                      batch: skill.batch === 'highlighted' ? undefined : 'highlighted',
-                    })
-                  }
-                  aria-label={
-                    skill.batch === 'highlighted' ? 'Unhighlight skill' : 'Highlight skill'
-                  }
-                >
-                  <span aria-hidden="true">✦</span>
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <div className="card tab-card">
-            <div className="tab-header">
-              <button
-                className={`tab-button${activeTab === 'files' ? ' is-active' : ''}`}
-                type="button"
-                onClick={() => setActiveTab('files')}
-              >
-                Files
-              </button>
-              <button
-                className={`tab-button${activeTab === 'compare' ? ' is-active' : ''}`}
-                type="button"
-                onClick={() => setActiveTab('compare')}
-              >
-                Compare
-              </button>
-            </div>
-            {activeTab === 'files' ? (
-              <div className="tab-body">
-                <div>
-                  <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
-                    SKILL.md
-                  </h2>
-                  <div className="markdown">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {readmeContent ?? 'Loading…'}
-                    </ReactMarkdown>
-                  </div>
+              {owner?.handle ? (
+                <div className="stat">
+                  by <a href={`/u/${owner.handle}`}>@{owner.handle}</a>
                 </div>
-                <div className="file-list">
-                  <div className="file-list-header">
-                    <h3 className="section-title" style={{ fontSize: '1.05rem', margin: 0 }}>
-                      Files
-                    </h3>
-                    <span className="section-subtitle" style={{ margin: 0 }}>
-                      {latestFiles.length} total
-                    </span>
-                  </div>
-                  <div className="file-list-body">
-                    {latestFiles.length === 0 ? (
-                      <div className="stat">No files available.</div>
-                    ) : (
-                      latestFiles.map((file) => (
-                        <div key={file.path} className="file-row">
-                          <span className="file-path">{file.path}</span>
-                          <span className="file-meta">{formatBytes(file.size)}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
+              ) : null}
+              {forkOf && forkOfHref ? (
+                <div className="stat">
+                  {forkOfLabel}{' '}
+                  <a href={forkOfHref}>
+                    {forkOfOwnerHandle ? `@${forkOfOwnerHandle}/` : ''}
+                    {forkOf.skill.slug}
+                  </a>
+                  {forkOf.version ? ` (based on ${forkOf.version})` : null}
                 </div>
-              </div>
-            ) : skill ? (
-              <SkillDiffCard skill={skill} versions={diffVersions ?? []} variant="embedded" />
-            ) : null}
-          </div>
-          <div className="card">
-            <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
-              Comments
-            </h2>
-            {isAuthenticated ? (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (!comment.trim()) return
-                  void addComment({ skillId: skill._id, body: comment.trim() }).then(() =>
-                    setComment(''),
-                  )
-                }}
-                className="comment-form"
-              >
-                <textarea
-                  className="comment-input"
-                  rows={4}
-                  value={comment}
-                  onChange={(event) => setComment(event.target.value)}
-                  placeholder="Leave a note…"
-                />
-                <button className="btn comment-submit" type="submit">
-                  Post comment
-                </button>
-              </form>
-            ) : (
-              <p className="section-subtitle">Sign in to comment.</p>
-            )}
-            <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
-              {(comments ?? []).length === 0 ? (
-                <div className="stat">No comments yet.</div>
-              ) : (
-                (comments ?? []).map((entry) => (
-                  <div
-                    key={entry.comment._id}
-                    className="stat"
-                    style={{ alignItems: 'flex-start' }}
+              ) : null}
+              {canonicalHref ? (
+                <div className="stat">
+                  canonical:{' '}
+                  <a href={canonicalHref}>
+                    {canonicalOwnerHandle ? `@${canonicalOwnerHandle}/` : ''}
+                    {canonical?.skill?.slug}
+                  </a>
+                </div>
+              ) : null}
+              {skill.batch === 'highlighted' ? <div className="tag">Highlighted</div> : null}
+              <div className="skill-actions">
+                {isAuthenticated ? (
+                  <button
+                    className={`star-toggle${isStarred ? ' is-active' : ''}`}
+                    type="button"
+                    onClick={() => void toggleStar({ skillId: skill._id })}
+                    aria-label={isStarred ? 'Unstar skill' : 'Star skill'}
                   >
-                    <div>
-                      <strong>@{entry.user?.handle ?? entry.user?.name ?? 'user'}</strong>
-                      <div style={{ color: '#5c554e' }}>{entry.comment.body}</div>
-                    </div>
-                    {isAuthenticated &&
-                    me &&
-                    (me._id === entry.comment.userId ||
-                      me.role === 'admin' ||
-                      me.role === 'moderator') ? (
-                      <button
-                        className="btn"
-                        type="button"
-                        onClick={() => void removeComment({ commentId: entry.comment._id })}
-                      >
-                        Delete
-                      </button>
+                    <span aria-hidden="true">★</span>
+                  </button>
+                ) : null}
+                {canHighlight ? (
+                  <button
+                    className={`highlight-toggle${skill.batch === 'highlighted' ? ' is-active' : ''}`}
+                    type="button"
+                    onClick={() =>
+                      void setBatch({
+                        skillId: skill._id,
+                        batch: skill.batch === 'highlighted' ? undefined : 'highlighted',
+                      })
+                    }
+                    aria-label={
+                      skill.batch === 'highlighted' ? 'Unhighlight skill' : 'Highlight skill'
+                    }
+                  >
+                    <span aria-hidden="true">✦</span>
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <div className="skill-hero-cta">
+              <div className="skill-version-pill">
+                <span className="skill-version-label">Current version</span>
+                <strong>v{latestVersion?.version ?? '—'}</strong>
+              </div>
+              <a
+                className="btn btn-primary"
+                href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}`}
+              >
+                Download zip
+              </a>
+            </div>
+          </div>
+          <div className="skill-tag-row">
+            {tagEntries.length === 0 ? (
+              <span className="section-subtitle" style={{ margin: 0 }}>
+                No tags yet.
+              </span>
+            ) : (
+              tagEntries.map(([tag, versionId]) => (
+                <span key={tag} className="tag">
+                  {tag}
+                  <span className="tag-meta">
+                    v{versionById.get(versionId)?.version ?? versionId}
+                  </span>
+                </span>
+              ))
+            )}
+          </div>
+          {canManage ? (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                if (!tagName.trim() || !tagVersionId) return
+                void updateTags({
+                  skillId: skill._id,
+                  tags: [{ tag: tagName.trim(), versionId: tagVersionId }],
+                })
+              }}
+              className="tag-form"
+            >
+              <input
+                className="search-input"
+                value={tagName}
+                onChange={(event) => setTagName(event.target.value)}
+                placeholder="latest"
+              />
+              <select
+                className="search-input"
+                value={tagVersionId ?? ''}
+                onChange={(event) => setTagVersionId(event.target.value as Id<'skillVersions'>)}
+              >
+                {(diffVersions ?? []).map((version) => (
+                  <option key={version._id} value={version._id}>
+                    v{version.version}
+                  </option>
+                ))}
+              </select>
+              <button className="btn" type="submit">
+                Update tag
+              </button>
+            </form>
+          ) : null}
+          {clawdis || installSpecs.length ? (
+            <div className="skill-hero-panels">
+              {clawdis ? (
+                <div className="skill-panel">
+                  <h3 className="section-title" style={{ fontSize: '1rem', margin: 0 }}>
+                    Requirements
+                  </h3>
+                  <div className="skill-panel-body">
+                    {clawdis.emoji ? <div className="tag">{clawdis.emoji} Clawdis</div> : null}
+                    {osLabels.length ? (
+                      <div className="stat">
+                        <strong>OS</strong>
+                        <span>{osLabels.join(' · ')}</span>
+                      </div>
+                    ) : null}
+                    {requirements?.bins?.length ? (
+                      <div className="stat">
+                        <strong>Bins</strong>
+                        <span>{requirements.bins.join(', ')}</span>
+                      </div>
+                    ) : null}
+                    {requirements?.anyBins?.length ? (
+                      <div className="stat">
+                        <strong>Any bin</strong>
+                        <span>{requirements.anyBins.join(', ')}</span>
+                      </div>
+                    ) : null}
+                    {requirements?.env?.length ? (
+                      <div className="stat">
+                        <strong>Env</strong>
+                        <span>{requirements.env.join(', ')}</span>
+                      </div>
+                    ) : null}
+                    {requirements?.config?.length ? (
+                      <div className="stat">
+                        <strong>Config</strong>
+                        <span>{requirements.config.join(', ')}</span>
+                      </div>
+                    ) : null}
+                    {clawdis.primaryEnv ? (
+                      <div className="stat">
+                        <strong>Primary env</strong>
+                        <span>{clawdis.primaryEnv}</span>
+                      </div>
                     ) : null}
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gap: 16 }}>
-          <div className="card sidebar-card">
-            {clawdis ? (
-              <div className="sidebar-section">
-                <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                  Requirements
-                </h3>
-                <div className="sidebar-stack">
-                  {clawdis.emoji ? <div className="tag">{clawdis.emoji} Clawdis</div> : null}
-                  {osLabels.length ? (
-                    <div className="stat">
-                      <strong>OS</strong>
-                      <span>{osLabels.join(' · ')}</span>
-                    </div>
-                  ) : null}
-                  {requirements?.bins?.length ? (
-                    <div className="stat">
-                      <strong>Bins</strong>
-                      <span>{requirements.bins.join(', ')}</span>
-                    </div>
-                  ) : null}
-                  {requirements?.anyBins?.length ? (
-                    <div className="stat">
-                      <strong>Any bin</strong>
-                      <span>{requirements.anyBins.join(', ')}</span>
-                    </div>
-                  ) : null}
-                  {requirements?.env?.length ? (
-                    <div className="stat">
-                      <strong>Env</strong>
-                      <span>{requirements.env.join(', ')}</span>
-                    </div>
-                  ) : null}
-                  {requirements?.config?.length ? (
-                    <div className="stat">
-                      <strong>Config</strong>
-                      <span>{requirements.config.join(', ')}</span>
-                    </div>
-                  ) : null}
-                  {clawdis.primaryEnv ? (
-                    <div className="stat">
-                      <strong>Primary env</strong>
-                      <span>{clawdis.primaryEnv}</span>
-                    </div>
-                  ) : null}
                 </div>
-                {installSpecs.length ? (
-                  <div className="sidebar-stack">
-                    <div className="section-subtitle" style={{ margin: 0 }}>
-                      Install
-                    </div>
+              ) : null}
+              {installSpecs.length ? (
+                <div className="skill-panel">
+                  <h3 className="section-title" style={{ fontSize: '1rem', margin: 0 }}>
+                    Install
+                  </h3>
+                  <div className="skill-panel-body">
                     {installSpecs.map((spec, index) => {
                       const command = formatInstallCommand(spec)
                       return (
@@ -398,14 +347,87 @@ export function SkillDetailPage({
                       )
                     })}
                   </div>
-                ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="card tab-card">
+          <div className="tab-header">
+            <button
+              className={`tab-button${activeTab === 'files' ? ' is-active' : ''}`}
+              type="button"
+              onClick={() => setActiveTab('files')}
+            >
+              Files
+            </button>
+            <button
+              className={`tab-button${activeTab === 'compare' ? ' is-active' : ''}`}
+              type="button"
+              onClick={() => setActiveTab('compare')}
+            >
+              Compare
+            </button>
+            <button
+              className={`tab-button${activeTab === 'versions' ? ' is-active' : ''}`}
+              type="button"
+              onClick={() => setActiveTab('versions')}
+            >
+              Versions
+            </button>
+          </div>
+          {activeTab === 'files' ? (
+            <div className="tab-body">
+              <div>
+                <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+                  SKILL.md
+                </h2>
+                <div className="markdown">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {readmeContent ?? 'Loading…'}
+                  </ReactMarkdown>
+                </div>
               </div>
-            ) : null}
-            <div className="sidebar-section">
-              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                Versions
-              </h3>
-              <div className="sidebar-scroll">
+              <div className="file-list">
+                <div className="file-list-header">
+                  <h3 className="section-title" style={{ fontSize: '1.05rem', margin: 0 }}>
+                    Files
+                  </h3>
+                  <span className="section-subtitle" style={{ margin: 0 }}>
+                    {latestFiles.length} total
+                  </span>
+                </div>
+                <div className="file-list-body">
+                  {latestFiles.length === 0 ? (
+                    <div className="stat">No files available.</div>
+                  ) : (
+                    latestFiles.map((file) => (
+                      <div key={file.path} className="file-row">
+                        <span className="file-path">{file.path}</span>
+                        <span className="file-meta">{formatBytes(file.size)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {activeTab === 'compare' && skill ? (
+            <div className="tab-body">
+              <SkillDiffCard skill={skill} versions={diffVersions ?? []} variant="embedded" />
+            </div>
+          ) : null}
+          {activeTab === 'versions' ? (
+            <div className="tab-body">
+              <div>
+                <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+                  Versions
+                </h2>
+                <p className="section-subtitle" style={{ margin: 0 }}>
+                  Download older releases or scan the changelog.
+                </p>
+              </div>
+              <div className="version-scroll">
                 <div className="version-list">
                   {(versions ?? []).map((version) => (
                     <div key={version._id} className="version-row">
@@ -433,66 +455,63 @@ export function SkillDetailPage({
                 </div>
               </div>
             </div>
-            <div className="sidebar-divider" />
-            <div className="sidebar-section">
-              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                Tags
-              </h3>
-              <div className="sidebar-stack">
-                {tagEntries.map(([tag, versionId]) => (
-                  <div key={tag} className="stat">
-                    <strong>{tag}</strong>
-                    <span>{versionById.get(versionId)?.version ?? versionId}</span>
+          ) : null}
+        </div>
+        <div className="card">
+          <h2 className="section-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+            Comments
+          </h2>
+          {isAuthenticated ? (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                if (!comment.trim()) return
+                void addComment({ skillId: skill._id, body: comment.trim() }).then(() =>
+                  setComment(''),
+                )
+              }}
+              className="comment-form"
+            >
+              <textarea
+                className="comment-input"
+                rows={4}
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                placeholder="Leave a note…"
+              />
+              <button className="btn comment-submit" type="submit">
+                Post comment
+              </button>
+            </form>
+          ) : (
+            <p className="section-subtitle">Sign in to comment.</p>
+          )}
+          <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
+            {(comments ?? []).length === 0 ? (
+              <div className="stat">No comments yet.</div>
+            ) : (
+              (comments ?? []).map((entry) => (
+                <div key={entry.comment._id} className="stat" style={{ alignItems: 'flex-start' }}>
+                  <div>
+                    <strong>@{entry.user?.handle ?? entry.user?.name ?? 'user'}</strong>
+                    <div style={{ color: '#5c554e' }}>{entry.comment.body}</div>
                   </div>
-                ))}
-              </div>
-              {canManage ? (
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    if (!tagName.trim() || !tagVersionId) return
-                    void updateTags({
-                      skillId: skill._id,
-                      tags: [{ tag: tagName.trim(), versionId: tagVersionId }],
-                    })
-                  }}
-                  className="sidebar-form"
-                >
-                  <input
-                    className="search-input"
-                    value={tagName}
-                    onChange={(event) => setTagName(event.target.value)}
-                    placeholder="latest"
-                  />
-                  <select
-                    className="search-input"
-                    value={tagVersionId ?? ''}
-                    onChange={(event) => setTagVersionId(event.target.value as Id<'skillVersions'>)}
-                  >
-                    {(versions ?? []).map((version) => (
-                      <option key={version._id} value={version._id}>
-                        v{version.version}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="btn" type="submit">
-                    Update tag
-                  </button>
-                </form>
-              ) : null}
-            </div>
-            <div className="sidebar-divider" />
-            <div className="sidebar-section">
-              <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
-                Download
-              </h3>
-              <a
-                className="btn btn-primary"
-                href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}`}
-              >
-                Download zip
-              </a>
-            </div>
+                  {isAuthenticated &&
+                  me &&
+                  (me._id === entry.comment.userId ||
+                    me.role === 'admin' ||
+                    me.role === 'moderator') ? (
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => void removeComment({ commentId: entry.comment._id })}
+                    >
+                      Delete
+                    </button>
+                  ) : null}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

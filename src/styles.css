@@ -1216,10 +1216,94 @@ code {
   }
 }
 
-.skill-detail-grid {
+.skill-detail-stack {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: 20px;
+  gap: 16px;
+}
+
+.skill-hero {
+  gap: 18px;
+}
+
+.skill-hero-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.skill-hero-title {
+  display: grid;
+  gap: 10px;
+  min-width: min(100%, 320px);
+  flex: 1 1 360px;
+}
+
+.skill-hero-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.skill-version-pill {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+  text-align: right;
+  min-width: 150px;
+}
+
+.skill-version-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.skill-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tag-meta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.tag-form {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.skill-hero-panels {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.skill-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.skill-panel-body {
+  display: grid;
+  gap: 8px;
 }
 
 .diff-card {
@@ -1471,6 +1555,12 @@ code {
   padding-right: 4px;
 }
 
+.version-scroll {
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .file-row {
   display: flex;
   align-items: center;
@@ -1631,8 +1721,18 @@ code {
     justify-content: flex-start;
   }
 
-  .skill-detail-grid {
+  .skill-hero-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .skill-hero-cta {
+    align-items: flex-start;
+  }
+
+  .tag-form {
     grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
   .diff-controls {
