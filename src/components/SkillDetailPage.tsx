@@ -202,16 +202,16 @@ export function SkillDetailPage({
                     setComment(''),
                   )
                 }}
-                style={{ display: 'grid', gap: 10, marginTop: 12 }}
+                className="comment-form"
               >
                 <textarea
-                  className="search-input"
-                  rows={2}
+                  className="comment-input"
+                  rows={4}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                   placeholder="Leave a note…"
                 />
-                <button className="btn" type="submit">
+                <button className="btn comment-submit" type="submit">
                   Post comment
                 </button>
               </form>
