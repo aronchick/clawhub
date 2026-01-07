@@ -319,7 +319,8 @@ describe('clawdhub e2e', () => {
       )
       expect(update.status).toBe(0)
 
-      const metaRes = await fetch(`${registry}${ApiRoutes.skills}/${slug}`, {
+      const metaUrl = new URL(`${ApiRoutes.skills}/${slug}`, registry)
+      const metaRes = await fetch(metaUrl.toString(), {
         headers: { Accept: 'application/json' },
       })
       expect(metaRes.status).toBe(200)

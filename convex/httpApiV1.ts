@@ -375,16 +375,15 @@ type FileLike = {
   arrayBuffer: () => Promise<ArrayBuffer>
 }
 
-function isFileLike(entry: FormDataEntryValue): entry is FileLike {
-  if (typeof entry === 'string') return false
-  if (typeof File !== 'undefined' && entry instanceof File) return true
+type FileLikeEntry = FormDataEntryValue & FileLike
+
+function toFileLike(entry: FormDataEntryValue): FileLikeEntry | null {
+  if (typeof entry === 'string') return null
   const candidate = entry as Partial<FileLike>
-  return (
-    typeof candidate.name === 'string' &&
-    typeof candidate.size === 'number' &&
-    typeof candidate.type === 'string' &&
-    typeof candidate.arrayBuffer === 'function'
-  )
+  if (typeof candidate.name !== 'string') return null
+  if (typeof candidate.size !== 'number') return null
+  if (typeof candidate.arrayBuffer !== 'function') return null
+  return entry as FileLikeEntry
 }
 
 async function skillsPostRouterV1Handler(ctx: ActionCtx, request: Request) {
@@ -496,13 +495,14 @@ async function parseMultipartPublish(
   }> = []
 
   for (const entry of form.getAll('files')) {
-    if (!isFileLike(entry)) continue
-    const path = entry.name
-    const size = entry.size
-    const contentType = entry.type || undefined
-    const buffer = new Uint8Array(await entry.arrayBuffer())
+    const file = toFileLike(entry)
+    if (!file) continue
+    const path = file.name
+    const size = file.size
+    const contentType = file.type || undefined
+    const buffer = new Uint8Array(await file.arrayBuffer())
     const sha256 = await sha256Hex(buffer)
-    const storageId = await ctx.storage.store(entry)
+    const storageId = await ctx.storage.store(file as Blob)
     files.push({ path, size, storageId, sha256, contentType })
   }
 
@@ -685,8 +685,8 @@ function toOptionalNumber(value: string | null) {
 }
 
 async function sha256Hex(bytes: Uint8Array) {
-  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
-  const digest = await crypto.subtle.digest('SHA-256', buffer)
+  const normalized = new Uint8Array(bytes)
+  const digest = await crypto.subtle.digest('SHA-256', normalized.buffer)
   return toHex(new Uint8Array(digest))
 }
 

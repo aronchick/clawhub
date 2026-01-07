@@ -38,18 +38,6 @@ beforeEach(() => {
   vi.mocked(publishVersionForUser).mockReset()
 })
 
-if (typeof File === 'undefined') {
-  class NodeFile extends Blob {
-    name: string
-    constructor(parts: BlobPart[], name: string, options?: BlobPropertyBag) {
-      super(parts, options)
-      this.name = name
-    }
-  }
-  const globalFile = globalThis as typeof globalThis & { File?: typeof File }
-  globalFile.File = NodeFile
-}
-
 describe('httpApiV1 handlers', () => {
   it('search returns empty results for blank query', async () => {
     const runAction = vi.fn()
@@ -425,7 +413,7 @@ describe('httpApiV1 handlers', () => {
         tags: ['latest'],
       }),
     )
-    form.append('files', new File(['hello'], 'SKILL.md', { type: 'text/plain' }))
+    form.append('files', new Blob(['hello'], { type: 'text/plain' }), 'SKILL.md')
     const response = await __handlers.publishSkillV1Handler(
       makeCtx({ runMutation, storage: { store: vi.fn().mockResolvedValue('storage:1') } }),
       new Request('https://example.com/api/v1/skills', {

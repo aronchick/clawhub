@@ -93,7 +93,7 @@ function Home() {
               vectors. No gatekeeping, just signal.
             </p>
             <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-              <Link to="/upload" className="btn btn-primary">
+              <Link to="/upload" search={{ updateSlug: undefined }} className="btn btn-primary">
                 Publish a skill
               </Link>
               <Link to="/search" search={{ q: undefined, highlighted: undefined }} className="btn">
