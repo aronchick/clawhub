@@ -18,6 +18,31 @@ describe('diffing', () => {
     expect(ordered.map((entry) => entry.version)).toEqual(['2.0.0', '1.5.0', '1.0.0'])
   })
 
+  it('sorts valid semver ahead of invalid entries', () => {
+    const ordered = sortVersionsBySemver([
+      { id: 'a', version: 'not-a-version' },
+      { id: 'b', version: '1.0.0' },
+      { id: 'c', version: '2.0.0' },
+    ])
+    expect(ordered.map((entry) => entry.version)).toEqual(['2.0.0', '1.0.0', 'not-a-version'])
+  })
+
+  it('sorts when only one entry is valid', () => {
+    const ordered = sortVersionsBySemver([
+      { id: 'a', version: 'nope' },
+      { id: 'b', version: '1.0.0' },
+    ])
+    expect(ordered.map((entry) => entry.version)).toEqual(['1.0.0', 'nope'])
+  })
+
+  it('sorts invalid entries lexicographically', () => {
+    const ordered = sortVersionsBySemver([
+      { id: 'a', version: 'beta' },
+      { id: 'b', version: 'alpha' },
+    ])
+    expect(ordered.map((entry) => entry.version)).toEqual(['alpha', 'beta'])
+  })
+
   it('resolves latest from tag when present', () => {
     const latestId = resolveLatestVersionId(
       [
@@ -27,6 +52,11 @@ describe('diffing', () => {
       { latest: 'a' },
     )
     expect(latestId).toBe('a')
+  })
+
+  it('returns null when no versions exist', () => {
+    const latestId = resolveLatestVersionId([], undefined)
+    expect(latestId).toBeNull()
   })
 
   it('resolves previous via semver predecessor', () => {
@@ -95,6 +125,20 @@ describe('diffing', () => {
       ],
     )
     expect(diff.map((item) => item.path)).toEqual(['a.txt', 'b.txt', 'c.txt'])
+  })
+
+  it('orders file diff list alphabetically for same status', () => {
+    const diff = buildFileDiffList(
+      [
+        { path: 'b.txt', sha256: 'aaa', size: 1 },
+        { path: 'a.txt', sha256: 'bbb', size: 1 },
+      ],
+      [
+        { path: 'b.txt', sha256: 'aaa', size: 1 },
+        { path: 'a.txt', sha256: 'bbb', size: 1 },
+      ],
+    )
+    expect(diff.map((item) => item.path)).toEqual(['a.txt', 'b.txt'])
   })
 
   it('selects SKILL.md as default file when present', () => {
