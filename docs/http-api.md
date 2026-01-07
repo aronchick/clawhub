@@ -9,17 +9,30 @@ read_when:
 
 Base URL: `https://clawdhub.com` (default).
 
-All paths below are under `/api/...` and implemented by Convex HTTP routes (`convex/http.ts`).
+All v1 paths are under `/api/v1/...` and implemented by Convex HTTP routes (`convex/http.ts`).
+Legacy `/api/...` and `/api/cli/...` remain for compatibility (see `DEPRECATIONS.md`).
+OpenAPI: `/api/v1/openapi.json`.
+
+## Rate limits
+
+Enforced per IP + per API key:
+
+- Read: 120/min per IP, 600/min per key
+- Write: 30/min per IP, 120/min per key
+
+Headers:
+
+- `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After` (when limited)
 
 ## Public endpoints (no auth)
 
-### `GET /api/search`
+### `GET /api/v1/search`
 
 Query params:
 
 - `q` (required): query string
 - `limit` (optional): integer
-- `approvedOnly` (optional): `true` to filter to approved-only skills (server may treat as “approved”/badged)
+- `highlightedOnly` (optional): `true` to filter to highlighted skills
 
 Response:
 
@@ -27,19 +40,54 @@ Response:
 { "results": [{ "score": 0.123, "slug": "gifgrep", "displayName": "GifGrep", "summary": "…", "version": "1.2.3", "updatedAt": 1730000000000 }] }
 ```
 
-### `GET /api/skill`
+### `GET /api/v1/skills`
 
 Query params:
 
-- `slug` (required)
+- `limit` (optional): integer
+- `cursor` (optional): pagination cursor
 
-Response (shape is stable; contents may expand):
+Response:
 
 ```json
-{ "skill": { "slug": "gifgrep", "displayName": "GifGrep", "summary": "…", "tags": { "latest": "…" }, "stats": {}, "createdAt": 0, "updatedAt": 0 }, "latestVersion": { "version": "1.2.3", "createdAt": 0, "changelog": "…" }, "owner": { "handle": "steipete", "displayName": "Peter", "image": null } }
+{ "items": [{ "slug": "gifgrep", "displayName": "GifGrep", "summary": "…", "tags": { "latest": "1.2.3" }, "stats": {}, "createdAt": 0, "updatedAt": 0, "latestVersion": { "version": "1.2.3", "createdAt": 0, "changelog": "…" } }], "nextCursor": null }
 ```
 
-### `GET /api/skill/resolve`
+### `GET /api/v1/skills/{slug}`
+
+Response:
+
+```json
+{ "skill": { "slug": "gifgrep", "displayName": "GifGrep", "summary": "…", "tags": { "latest": "1.2.3" }, "stats": {}, "createdAt": 0, "updatedAt": 0 }, "latestVersion": { "version": "1.2.3", "createdAt": 0, "changelog": "…" }, "owner": { "handle": "steipete", "displayName": "Peter", "image": null } }
+```
+
+### `GET /api/v1/skills/{slug}/versions`
+
+Query params:
+
+- `limit` (optional): integer
+- `cursor` (optional): pagination cursor
+
+### `GET /api/v1/skills/{slug}/versions/{version}`
+
+Returns version metadata + files list.
+
+### `GET /api/v1/skills/{slug}/file`
+
+Returns raw text content.
+
+Query params:
+
+- `path` (required)
+- `version` (optional)
+- `tag` (optional)
+
+Notes:
+
+- Defaults to latest version.
+- File size limit: 200KB.
+
+### `GET /api/v1/resolve`
 
 Used by the CLI to map a local fingerprint to a known version.
 
@@ -54,7 +102,7 @@ Response:
 { "slug": "gifgrep", "match": { "version": "1.2.2" }, "latestVersion": { "version": "1.2.3" } }
 ```
 
-### `GET /api/download`
+### `GET /api/v1/download`
 
 Downloads a zip of a skill version.
 
@@ -69,44 +117,41 @@ Notes:
 - If neither `version` nor `tag` is provided, the latest version is used.
 - Soft-deleted versions return `410`.
 
-## CLI endpoints (Bearer token)
+## Auth endpoints (Bearer token)
 
-All CLI endpoints require:
+All endpoints require:
 
 ```
 Authorization: Bearer clh_...
 ```
 
-### `GET /api/cli/whoami`
+### `GET /api/v1/whoami`
 
 Validates token and returns the user handle.
 
-### `POST /api/cli/upload-url`
+### `POST /api/v1/skills`
 
-Returns a Convex upload URL for a single file upload.
+Publishes a new version.
 
-Response:
+- Preferred: `multipart/form-data` with `payload` JSON + `files[]` blobs.
+- JSON body with `files` (storageId-based) is also accepted.
 
-```json
-{ "uploadUrl": "https://..." }
-```
-
-### `POST /api/cli/publish`
-
-Publishes a new version from uploaded files.
-
-- Validates semver, slug, size limits, text-only files, and `SKILL.md`.
-- Generates embeddings (requires `OPENAI_API_KEY` server-side).
-
-### `POST /api/cli/telemetry/sync`
-
-Used by `clawdhub sync` to report install telemetry.
-
-Details: `docs/telemetry.md`.
-
-### `POST /api/cli/skill/delete` / `POST /api/cli/skill/undelete`
+### `DELETE /api/v1/skills/{slug}` / `POST /api/v1/skills/{slug}/undelete`
 
 Soft-delete / restore a skill (owner/admin only).
+
+## Legacy CLI endpoints (deprecated)
+
+Still supported for older CLI versions:
+
+- `GET /api/cli/whoami`
+- `POST /api/cli/upload-url`
+- `POST /api/cli/publish`
+- `POST /api/cli/telemetry/sync`
+- `POST /api/cli/skill/delete`
+- `POST /api/cli/skill/undelete`
+
+See `DEPRECATIONS.md` for removal plan.
 
 ## Registry discovery (`/.well-known/clawdhub.json`)
 

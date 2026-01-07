@@ -163,6 +163,16 @@ const apiTokens = defineTable({
   .index('by_user', ['userId'])
   .index('by_hash', ['tokenHash'])
 
+const rateLimits = defineTable({
+  key: v.string(),
+  windowStart: v.number(),
+  count: v.number(),
+  limit: v.number(),
+  updatedAt: v.number(),
+})
+  .index('by_key_window', ['key', 'windowStart'])
+  .index('by_key', ['key'])
+
 const userSyncRoots = defineTable({
   userId: v.id('users'),
   rootId: v.string(),
@@ -212,6 +222,7 @@ export default defineSchema({
   stars,
   auditLogs,
   apiTokens,
+  rateLimits,
   userSyncRoots,
   userSkillInstalls,
   userSkillRootInstalls,

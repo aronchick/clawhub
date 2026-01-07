@@ -29,13 +29,13 @@ read_when:
 
 ### Search (HTTP)
 
-- `/api/search?q=...` routes to Convex action for vector search.
+- `/api/v1/search?q=...` routes to Convex action for vector search.
 - Embeddings currently generated during publish.
 
 ### Install (CLI)
 
-- Resolve latest version via `/api/skill?slug=...`.
-- Download zip via `/api/download?slug=...&version=...`.
+- Resolve latest version via `/api/v1/skills/<slug>`.
+- Download zip via `/api/v1/download?slug=...&version=...`.
 - Extract into `./skills/<slug>` (default).
 - Persist install state:
   - `./.clawdhub/lock.json` (per workdir)
@@ -43,7 +43,7 @@ read_when:
 
 ### Update (CLI)
 
-- Hash local files, call `/api/skill/resolve?slug=...&hash=<sha256>`.
+- Hash local files, call `/api/v1/resolve?slug=...&hash=<sha256>`.
 - If local matches a known version → use that for “current”.
 - If local doesn’t match:
   - refuse by default
@@ -51,8 +51,7 @@ read_when:
 
 ### Publish (CLI)
 
-- Upload each text file via `/api/cli/upload-url` (Convex upload URL).
-- Publish metadata via `/api/cli/publish` (requires Bearer token).
+- Publish via `POST /api/v1/skills` (multipart; requires Bearer token).
 
 ### Sync (CLI)
 

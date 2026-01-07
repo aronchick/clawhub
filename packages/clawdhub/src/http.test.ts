@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { apiRequest, downloadZip } from './http'
-import { ApiCliWhoamiResponseSchema } from './schema/index.js'
+import { ApiV1WhoamiResponseSchema } from './schema/index.js'
 
 describe('apiRequest', () => {
   it('adds bearer token and parses json', async () => {
@@ -14,7 +14,7 @@ describe('apiRequest', () => {
     const result = await apiRequest(
       'https://example.com',
       { method: 'GET', path: '/x', token: 'clh_token' },
-      ApiCliWhoamiResponseSchema,
+      ApiV1WhoamiResponseSchema,
     )
     expect(result.user.handle).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)

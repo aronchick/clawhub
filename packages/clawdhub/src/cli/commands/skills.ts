@@ -4,9 +4,9 @@ import semver from 'semver'
 import { apiRequest, downloadZip } from '../../http.js'
 import {
   ApiRoutes,
-  ApiSearchResponseSchema,
-  ApiSkillMetaResponseSchema,
-  ApiSkillResolveResponseSchema,
+  ApiV1SearchResponseSchema,
+  ApiV1SkillResolveResponseSchema,
+  ApiV1SkillResponseSchema,
 } from '../../schema/index.js'
 import {
   extractZipToDir,
@@ -35,7 +35,7 @@ export async function cmdSearch(opts: GlobalOpts, query: string, limit?: number)
     const result = await apiRequest(
       registry,
       { method: 'GET', url: url.toString() },
-      ApiSearchResponseSchema,
+      ApiV1SearchResponseSchema,
     )
 
     spinner.stop()
@@ -77,8 +77,8 @@ export async function cmdInstall(
       (
         await apiRequest(
           registry,
-          { method: 'GET', path: `/api/skill?slug=${encodeURIComponent(trimmed)}` },
-          ApiSkillMetaResponseSchema,
+          { method: 'GET', path: `${ApiRoutes.skills}/${encodeURIComponent(trimmed)}` },
+          ApiV1SkillResponseSchema,
         )
       ).latestVersion?.version ??
       null
@@ -150,12 +150,10 @@ export async function cmdUpdate(
       if (localFingerprint) {
         resolveResult = await resolveSkillVersion(registry, entry, localFingerprint)
       } else {
-        const url = new URL(ApiRoutes.skill, registry)
-        url.searchParams.set('slug', entry)
         const meta = await apiRequest(
           registry,
-          { method: 'GET', url: url.toString() },
-          ApiSkillMetaResponseSchema,
+          { method: 'GET', url: `${ApiRoutes.skills}/${encodeURIComponent(entry)}` },
+          ApiV1SkillResponseSchema,
         )
         resolveResult = { match: null, latestVersion: meta.latestVersion ?? null }
       }
@@ -244,10 +242,14 @@ export async function cmdList(opts: GlobalOpts) {
 }
 
 async function resolveSkillVersion(registry: string, slug: string, hash: string) {
-  const url = new URL(ApiRoutes.skillResolve, registry)
+  const url = new URL(ApiRoutes.resolve, registry)
   url.searchParams.set('slug', slug)
   url.searchParams.set('hash', hash)
-  return apiRequest(registry, { method: 'GET', url: url.toString() }, ApiSkillResolveResponseSchema)
+  return apiRequest(
+    registry,
+    { method: 'GET', url: url.toString() },
+    ApiV1SkillResolveResponseSchema,
+  )
 }
 
 async function fileExists(path: string) {

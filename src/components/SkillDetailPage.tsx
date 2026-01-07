@@ -220,7 +220,7 @@ export function SkillDetailPage({
               </div>
               <a
                 className="btn btn-primary"
-                href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}`}
+                href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/v1/download?slug=${skill.slug}`}
               >
                 Download zip
               </a>
@@ -445,7 +445,7 @@ export function SkillDetailPage({
                       <div className="version-actions">
                         <a
                           className="btn version-zip"
-                          href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/download?slug=${skill.slug}&version=${version.version}`}
+                          href={`${import.meta.env.VITE_CONVEX_SITE_URL}/api/v1/download?slug=${skill.slug}&version=${version.version}`}
                         >
                           Zip
                         </a>

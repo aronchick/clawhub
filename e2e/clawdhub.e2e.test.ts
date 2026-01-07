@@ -5,9 +5,9 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  ApiCliWhoamiResponseSchema,
   ApiRoutes,
-  ApiSearchResponseSchema,
+  ApiV1SearchResponseSchema,
+  ApiV1WhoamiResponseSchema,
   parseArk,
 } from 'clawdhub-schema'
 import { unzipSync } from 'fflate'
@@ -50,7 +50,7 @@ describe('clawdhub e2e', () => {
     const response = await fetch(url.toString(), { headers: { Accept: 'application/json' } })
     expect(response.ok).toBe(true)
     const json = (await response.json()) as unknown
-    const parsed = parseArk(ApiSearchResponseSchema, json, 'API response')
+    const parsed = parseArk(ApiV1SearchResponseSchema, json, 'API response')
     expect(Array.isArray(parsed.results)).toBe(true)
   })
 
@@ -102,13 +102,13 @@ describe('clawdhub e2e', () => {
 
     const cfg = await makeTempConfig(registry, token)
     try {
-      const whoamiUrl = new URL(ApiRoutes.cliWhoami, registry)
+      const whoamiUrl = new URL(ApiRoutes.whoami, registry)
       const whoamiRes = await fetch(whoamiUrl.toString(), {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
       expect(whoamiRes.ok).toBe(true)
       const whoami = parseArk(
-        ApiCliWhoamiResponseSchema,
+        ApiV1WhoamiResponseSchema,
         (await whoamiRes.json()) as unknown,
         'Whoami',
       )
@@ -319,9 +319,9 @@ describe('clawdhub e2e', () => {
       )
       expect(update.status).toBe(0)
 
-      const metaUrl = new URL(ApiRoutes.skill, registry)
-      metaUrl.searchParams.set('slug', slug)
-      const metaRes = await fetch(metaUrl.toString(), { headers: { Accept: 'application/json' } })
+      const metaRes = await fetch(`${registry}${ApiRoutes.skills}/${slug}`, {
+        headers: { Accept: 'application/json' },
+      })
       expect(metaRes.status).toBe(200)
 
       const del = spawnSync(

@@ -1,6 +1,6 @@
 import { readGlobalConfig } from '../../config.js'
 import { apiRequest } from '../../http.js'
-import { ApiCliSkillDeleteResponseSchema, ApiRoutes, parseArk } from '../../schema/index.js'
+import { ApiRoutes, ApiV1DeleteResponseSchema, parseArk } from '../../schema/index.js'
 import { getRegistry } from '../registry.js'
 import type { GlobalOpts } from '../types.js'
 import { createSpinner, fail, formatError, isInteractive, promptConfirm } from '../ui.js'
@@ -32,14 +32,13 @@ export async function cmdDeleteSkill(
   const registry = await getRegistry(opts, { cache: true })
   const spinner = createSpinner(`Deleting ${slug}`)
   try {
-    const body = { slug }
     const result = await apiRequest(
       registry,
-      { method: 'POST', path: ApiRoutes.cliSkillDelete, token, body },
-      ApiCliSkillDeleteResponseSchema,
+      { method: 'DELETE', path: `${ApiRoutes.skills}/${encodeURIComponent(slug)}`, token },
+      ApiV1DeleteResponseSchema,
     )
     spinner.succeed(`OK. Deleted ${slug}`)
-    return parseArk(ApiCliSkillDeleteResponseSchema, result, 'Delete response')
+    return parseArk(ApiV1DeleteResponseSchema, result, 'Delete response')
   } catch (error) {
     spinner.fail(formatError(error))
     throw error
@@ -66,14 +65,17 @@ export async function cmdUndeleteSkill(
   const registry = await getRegistry(opts, { cache: true })
   const spinner = createSpinner(`Undeleting ${slug}`)
   try {
-    const body = { slug }
     const result = await apiRequest(
       registry,
-      { method: 'POST', path: ApiRoutes.cliSkillUndelete, token, body },
-      ApiCliSkillDeleteResponseSchema,
+      {
+        method: 'POST',
+        path: `${ApiRoutes.skills}/${encodeURIComponent(slug)}/undelete`,
+        token,
+      },
+      ApiV1DeleteResponseSchema,
     )
     spinner.succeed(`OK. Undeleted ${slug}`)
-    return parseArk(ApiCliSkillDeleteResponseSchema, result, 'Undelete response')
+    return parseArk(ApiV1DeleteResponseSchema, result, 'Undelete response')
   } catch (error) {
     spinner.fail(formatError(error))
     throw error

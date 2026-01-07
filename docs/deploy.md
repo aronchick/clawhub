@@ -66,8 +66,8 @@ export CLAWDHUB_REGISTRY=https://your-site.example
 ## 5) Post-deploy checks
 
 ```bash
-curl -i "https://<site>/api/search?q=test"
-curl -i "https://<site>/api/skill?slug=gifgrep"
+curl -i "https://<site>/api/v1/search?q=test"
+curl -i "https://<site>/api/v1/skills/gifgrep"
 ```
 
 Then:

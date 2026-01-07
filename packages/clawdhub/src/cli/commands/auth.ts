@@ -2,7 +2,7 @@ import { buildCliAuthUrl, startLoopbackAuthServer } from '../../browserAuth.js'
 import { readGlobalConfig, writeGlobalConfig } from '../../config.js'
 import { discoverRegistryFromSite } from '../../discovery.js'
 import { apiRequest } from '../../http.js'
-import { ApiCliWhoamiResponseSchema, ApiRoutes } from '../../schema/index.js'
+import { ApiRoutes, ApiV1WhoamiResponseSchema } from '../../schema/index.js'
 import { getRegistry } from '../registry.js'
 import type { GlobalOpts } from '../types.js'
 import { createSpinner, fail, formatError, openInBrowser, promptHidden } from '../ui.js'
@@ -55,8 +55,8 @@ export async function cmdLogin(
   try {
     const whoami = await apiRequest(
       registry,
-      { method: 'GET', path: ApiRoutes.cliWhoami, token },
-      ApiCliWhoamiResponseSchema,
+      { method: 'GET', path: ApiRoutes.whoami, token },
+      ApiV1WhoamiResponseSchema,
     )
     if (!whoami.user) fail('Login failed')
 
@@ -86,8 +86,8 @@ export async function cmdWhoami(opts: GlobalOpts) {
   try {
     const whoami = await apiRequest(
       registry,
-      { method: 'GET', path: ApiRoutes.cliWhoami, token },
-      ApiCliWhoamiResponseSchema,
+      { method: 'GET', path: ApiRoutes.whoami, token },
+      ApiV1WhoamiResponseSchema,
     )
     spinner.succeed(whoami.user.handle ?? 'unknown')
   } catch (error) {

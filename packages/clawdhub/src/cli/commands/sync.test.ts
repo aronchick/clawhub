@@ -98,9 +98,9 @@ describe('cmdSync', () => {
   it('classifies skills as new/update/synced (dry-run, mocked HTTP)', async () => {
     interactive = false
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
-      if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
+      if (args.path === '/api/v1/whoami') return { user: { handle: 'steipete' } }
       if (args.path === '/api/cli/telemetry/sync') return { ok: true }
-      if (args.path.startsWith('/api/skill/resolve?')) {
+      if (args.path.startsWith('/api/v1/resolve?')) {
         const u = new URL(`https://x.test${args.path}`)
         const slug = u.searchParams.get('slug')
         if (slug === 'new-skill') {
@@ -135,9 +135,9 @@ describe('cmdSync', () => {
       return initialValues
     })
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
-      if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
+      if (args.path === '/api/v1/whoami') return { user: { handle: 'steipete' } }
       if (args.path === '/api/cli/telemetry/sync') return { ok: true }
-      if (args.path.startsWith('/api/skill/resolve?')) {
+      if (args.path.startsWith('/api/v1/resolve?')) {
         const u = new URL(`https://x.test${args.path}`)
         const slug = u.searchParams.get('slug')
         if (slug === 'new-skill') {
@@ -171,9 +171,9 @@ describe('cmdSync', () => {
   it('shows condensed synced list when nothing to sync', async () => {
     interactive = false
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
-      if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
+      if (args.path === '/api/v1/whoami') return { user: { handle: 'steipete' } }
       if (args.path === '/api/cli/telemetry/sync') return { ok: true }
-      if (args.path.startsWith('/api/skill/resolve?')) {
+      if (args.path.startsWith('/api/v1/resolve?')) {
         return { match: { version: '1.0.0' }, latestVersion: { version: '1.0.0' } }
       }
       throw new Error(`Unexpected apiRequest: ${args.path}`)
@@ -203,9 +203,9 @@ describe('cmdSync', () => {
     })
 
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
-      if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
+      if (args.path === '/api/v1/whoami') return { user: { handle: 'steipete' } }
       if (args.path === '/api/cli/telemetry/sync') return { ok: true }
-      if (args.path.startsWith('/api/skill/resolve?')) {
+      if (args.path.startsWith('/api/v1/resolve?')) {
         return { match: null, latestVersion: null }
       }
       throw new Error(`Unexpected apiRequest: ${args.path}`)
@@ -222,9 +222,9 @@ describe('cmdSync', () => {
   it('allows empty changelog for updates (interactive)', async () => {
     interactive = true
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
-      if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
+      if (args.path === '/api/v1/whoami') return { user: { handle: 'steipete' } }
       if (args.path === '/api/cli/telemetry/sync') return { ok: true }
-      if (args.path.startsWith('/api/skill/resolve?')) {
+      if (args.path.startsWith('/api/v1/resolve?')) {
         const u = new URL(`https://x.test${args.path}`)
         const slug = u.searchParams.get('slug')
         if (slug === 'new-skill') {
@@ -254,8 +254,8 @@ describe('cmdSync', () => {
     interactive = false
     process.env.CLAWDHUB_DISABLE_TELEMETRY = '1'
     mockApiRequest.mockImplementation(async (_registry: string, args: { path: string }) => {
-      if (args.path === '/api/cli/whoami') return { user: { handle: 'steipete' } }
-      if (args.path.startsWith('/api/skill/resolve?')) {
+      if (args.path === '/api/v1/whoami') return { user: { handle: 'steipete' } }
+      if (args.path.startsWith('/api/v1/resolve?')) {
         return { match: { version: '1.0.0' }, latestVersion: { version: '1.0.0' } }
       }
       throw new Error(`Unexpected apiRequest: ${args.path}`)

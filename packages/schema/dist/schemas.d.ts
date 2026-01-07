@@ -110,6 +110,99 @@ export type CliTelemetrySyncRequest = (typeof CliTelemetrySyncRequestSchema)[inf
 export declare const ApiCliTelemetrySyncResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
     ok: true;
 }, {}>;
+export declare const ApiV1WhoamiResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    user: {
+        handle: string | null;
+        displayName?: string | null | undefined;
+        image?: string | null | undefined;
+    };
+}, {}>;
+export declare const ApiV1SearchResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    results: {
+        score: number;
+        slug?: string | undefined;
+        displayName?: string | undefined;
+        summary?: string | null | undefined;
+        version?: string | null | undefined;
+        updatedAt?: number | undefined;
+    }[];
+}, {}>;
+export declare const ApiV1SkillListResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    items: {
+        slug: string;
+        displayName: string;
+        tags: unknown;
+        stats: unknown;
+        createdAt: number;
+        updatedAt: number;
+        summary?: string | null | undefined;
+        latestVersion?: {
+            version: string;
+            createdAt: number;
+            changelog: string;
+        } | undefined;
+    }[];
+    nextCursor: string | null;
+}, {}>;
+export declare const ApiV1SkillResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    skill: {
+        slug: string;
+        displayName: string;
+        tags: unknown;
+        stats: unknown;
+        createdAt: number;
+        updatedAt: number;
+        summary?: string | null | undefined;
+    } | null;
+    latestVersion: {
+        version: string;
+        createdAt: number;
+        changelog: string;
+    } | null;
+    owner: {
+        handle: string | null;
+        displayName?: string | null | undefined;
+        image?: string | null | undefined;
+    } | null;
+}, {}>;
+export declare const ApiV1SkillVersionListResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    items: {
+        version: string;
+        createdAt: number;
+        changelog: string;
+        changelogSource?: "user" | "auto" | null | undefined;
+    }[];
+    nextCursor: string | null;
+}, {}>;
+export declare const ApiV1SkillVersionResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    version: {
+        version: string;
+        createdAt: number;
+        changelog: string;
+        changelogSource?: "user" | "auto" | null | undefined;
+        files?: unknown;
+    } | null;
+    skill: {
+        slug: string;
+        displayName: string;
+    } | null;
+}, {}>;
+export declare const ApiV1SkillResolveResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    match: {
+        version: string;
+    } | null;
+    latestVersion: {
+        version: string;
+    } | null;
+}, {}>;
+export declare const ApiV1PublishResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    ok: true;
+    skillId: string;
+    versionId: string;
+}, {}>;
+export declare const ApiV1DeleteResponseSchema: import("arktype/internal/variants/object.ts").ObjectType<{
+    ok: true;
+}, {}>;
 export declare const SkillInstallSpecSchema: import("arktype/internal/variants/object.ts").ObjectType<{
     kind: "brew" | "node" | "go" | "uv";
     id?: string | undefined;

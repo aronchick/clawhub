@@ -2,16 +2,9 @@ import { stat } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import semver from 'semver'
 import { readGlobalConfig } from '../../config.js'
-import { apiRequest } from '../../http.js'
-import {
-  ApiCliPublishResponseSchema,
-  ApiCliUploadUrlResponseSchema,
-  ApiRoutes,
-  ApiUploadFileResponseSchema,
-  CliPublishRequestSchema,
-  parseArk,
-} from '../../schema/index.js'
-import { listTextFiles, sha256Hex } from '../../skills.js'
+import { apiRequestForm } from '../../http.js'
+import { ApiRoutes, ApiV1PublishResponseSchema } from '../../schema/index.js'
+import { listTextFiles } from '../../skills.js'
 import { getRegistry } from '../registry.js'
 import { sanitizeSlug, titleCase } from '../slug.js'
 import type { GlobalOpts } from '../types.js'
@@ -69,50 +62,32 @@ export async function cmdPublish(
       fail('SKILL.md required')
     }
 
-    const uploaded: Array<{
-      path: string
-      size: number
-      storageId: string
-      sha256: string
-      contentType?: string
-    }> = []
+    const form = new FormData()
+    form.set(
+      'payload',
+      JSON.stringify({
+        slug,
+        displayName,
+        version,
+        changelog,
+        tags,
+        ...(forkOf ? { forkOf } : {}),
+      }),
+    )
 
     let index = 0
     for (const file of filesOnDisk) {
       index += 1
       spinner.text = `Uploading ${file.relPath} (${index}/${filesOnDisk.length})`
-      const { uploadUrl } = await apiRequest(
-        registry,
-        { method: 'POST', path: ApiRoutes.cliUploadUrl, token },
-        ApiCliUploadUrlResponseSchema,
-      )
-
-      const storageId = await uploadFile(uploadUrl, file.bytes, file.contentType ?? 'text/plain')
-      const sha256 = sha256Hex(file.bytes)
-      uploaded.push({
-        path: file.relPath,
-        size: file.bytes.byteLength,
-        storageId,
-        sha256,
-        contentType: file.contentType ?? undefined,
-      })
+      const blob = new Blob([Buffer.from(file.bytes)], { type: file.contentType ?? 'text/plain' })
+      form.append('files', blob, file.relPath)
     }
 
     spinner.text = `Publishing ${slug}@${version}`
-    const publishPayload = {
-      slug,
-      displayName,
-      version,
-      changelog,
-      tags,
-      files: uploaded,
-      ...(forkOf ? { forkOf } : {}),
-    }
-    const body = parseArk(CliPublishRequestSchema, publishPayload, 'Publish payload')
-    const result = await apiRequest(
+    const result = await apiRequestForm(
       registry,
-      { method: 'POST', path: ApiRoutes.cliPublish, token, body },
-      ApiCliPublishResponseSchema,
+      { method: 'POST', path: ApiRoutes.skills, token, form },
+      ApiV1PublishResponseSchema,
     )
 
     spinner.succeed(`OK. Published ${slug}@${version} (${result.versionId})`)
@@ -130,21 +105,4 @@ function parseForkOf(value: string) {
   const version = (versionRaw ?? '').trim()
   if (version && !semver.valid(version)) fail('--fork-of version must be valid semver')
   return { slug, version: version || undefined }
-}
-
-async function uploadFile(uploadUrl: string, bytes: Uint8Array, contentType: string) {
-  const response = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': contentType || 'application/octet-stream' },
-    body: Buffer.from(bytes),
-  })
-  if (!response.ok) {
-    throw new Error(`Upload failed: ${await response.text()}`)
-  }
-  const payload = parseArk(
-    ApiUploadFileResponseSchema,
-    (await response.json()) as unknown,
-    'Upload response',
-  )
-  return payload.storageId
 }

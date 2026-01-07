@@ -1,4 +1,4 @@
-import { ApiRoutes } from 'clawdhub-schema'
+import { ApiRoutes, LegacyApiRoutes } from 'clawdhub-schema'
 import { httpRouter } from 'convex/server'
 import { auth } from './auth'
 import { downloadZip } from './downloads'
@@ -13,6 +13,16 @@ import {
   resolveSkillVersionHttp,
   searchSkillsHttp,
 } from './httpApi'
+import {
+  listSkillsV1Http,
+  publishSkillV1Http,
+  resolveSkillVersionV1Http,
+  searchSkillsV1Http,
+  skillsDeleteRouterV1Http,
+  skillsGetRouterV1Http,
+  skillsPostRouterV1Http,
+  whoamiV1Http,
+} from './httpApiV1'
 
 const http = httpRouter()
 
@@ -27,53 +37,107 @@ http.route({
 http.route({
   path: ApiRoutes.search,
   method: 'GET',
+  handler: searchSkillsV1Http,
+})
+
+http.route({
+  path: ApiRoutes.resolve,
+  method: 'GET',
+  handler: resolveSkillVersionV1Http,
+})
+
+http.route({
+  path: ApiRoutes.skills,
+  method: 'GET',
+  handler: listSkillsV1Http,
+})
+
+http.route({
+  pathPrefix: `${ApiRoutes.skills}/`,
+  method: 'GET',
+  handler: skillsGetRouterV1Http,
+})
+
+http.route({
+  path: ApiRoutes.skills,
+  method: 'POST',
+  handler: publishSkillV1Http,
+})
+
+http.route({
+  pathPrefix: `${ApiRoutes.skills}/`,
+  method: 'POST',
+  handler: skillsPostRouterV1Http,
+})
+
+http.route({
+  pathPrefix: `${ApiRoutes.skills}/`,
+  method: 'DELETE',
+  handler: skillsDeleteRouterV1Http,
+})
+
+http.route({
+  path: ApiRoutes.whoami,
+  method: 'GET',
+  handler: whoamiV1Http,
+})
+
+// TODO: remove legacy /api routes after deprecation window.
+http.route({
+  path: LegacyApiRoutes.download,
+  method: 'GET',
+  handler: downloadZip,
+})
+http.route({
+  path: LegacyApiRoutes.search,
+  method: 'GET',
   handler: searchSkillsHttp,
 })
 
 http.route({
-  path: ApiRoutes.skill,
+  path: LegacyApiRoutes.skill,
   method: 'GET',
   handler: getSkillHttp,
 })
 
 http.route({
-  path: ApiRoutes.skillResolve,
+  path: LegacyApiRoutes.skillResolve,
   method: 'GET',
   handler: resolveSkillVersionHttp,
 })
 
 http.route({
-  path: ApiRoutes.cliWhoami,
+  path: LegacyApiRoutes.cliWhoami,
   method: 'GET',
   handler: cliWhoamiHttp,
 })
 
 http.route({
-  path: ApiRoutes.cliUploadUrl,
+  path: LegacyApiRoutes.cliUploadUrl,
   method: 'POST',
   handler: cliUploadUrlHttp,
 })
 
 http.route({
-  path: ApiRoutes.cliPublish,
+  path: LegacyApiRoutes.cliPublish,
   method: 'POST',
   handler: cliPublishHttp,
 })
 
 http.route({
-  path: ApiRoutes.cliTelemetrySync,
+  path: LegacyApiRoutes.cliTelemetrySync,
   method: 'POST',
   handler: cliTelemetrySyncHttp,
 })
 
 http.route({
-  path: ApiRoutes.cliSkillDelete,
+  path: LegacyApiRoutes.cliSkillDelete,
   method: 'POST',
   handler: cliSkillDeleteHttp,
 })
 
 http.route({
-  path: ApiRoutes.cliSkillUndelete,
+  path: LegacyApiRoutes.cliSkillUndelete,
   method: 'POST',
   handler: cliSkillUndeleteHttp,
 })

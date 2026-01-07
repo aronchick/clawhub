@@ -40,7 +40,7 @@ read_when:
 ## Delete / undelete (owner/admin)
 - `bun clawdhub delete clawdhub-manual-<ts> --yes`
 - Verify hidden:
-  - `curl -i "https://clawdhub.com/api/skill?slug=clawdhub-manual-<ts>"`
+- `curl -i "https://clawdhub.com/api/v1/skills/clawdhub-manual-<ts>"`
 - Restore:
   - `bun clawdhub undelete clawdhub-manual-<ts> --yes`
 - Cleanup:

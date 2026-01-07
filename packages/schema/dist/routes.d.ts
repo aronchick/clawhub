@@ -1,4 +1,4 @@
-export declare const ApiRoutes: {
+export declare const LegacyApiRoutes: {
     readonly download: "/api/download";
     readonly search: "/api/search";
     readonly skill: "/api/skill";
@@ -9,4 +9,11 @@ export declare const ApiRoutes: {
     readonly cliTelemetrySync: "/api/cli/telemetry/sync";
     readonly cliSkillDelete: "/api/cli/skill/delete";
     readonly cliSkillUndelete: "/api/cli/skill/undelete";
+};
+export declare const ApiRoutes: {
+    readonly search: "/api/v1/search";
+    readonly resolve: "/api/v1/resolve";
+    readonly download: "/api/v1/download";
+    readonly skills: "/api/v1/skills";
+    readonly whoami: "/api/v1/whoami";
 };

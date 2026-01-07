@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.6 - 2026-01-07
+
+### Added
+- API: v1 public REST endpoints with rate limits, raw file fetch, and OpenAPI spec.
+- Docs: `docs/api.md` and `DEPRECATIONS.md` for the v1 cutover plan.
+
+### Changed
+- CLI: publish now uses single multipart `POST /api/v1/skills`.
+- Registry: legacy `/api/*` + `/api/cli/*` marked for deprecation (kept for now).
+
 ## 0.0.5 - 2026-01-06
 
 ### Added

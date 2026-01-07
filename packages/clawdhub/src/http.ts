@@ -3,8 +3,8 @@ import type { ArkValidator } from './schema/index.js'
 import { ApiRoutes, parseArk } from './schema/index.js'
 
 type RequestArgs =
-  | { method: 'GET' | 'POST'; path: string; token?: string; body?: unknown }
-  | { method: 'GET' | 'POST'; url: string; token?: string; body?: unknown }
+  | { method: 'GET' | 'POST' | 'DELETE'; path: string; token?: string; body?: unknown }
+  | { method: 'GET' | 'POST' | 'DELETE'; url: string; token?: string; body?: unknown }
 
 export async function apiRequest<T>(registry: string, args: RequestArgs): Promise<T>
 export async function apiRequest<T>(
@@ -28,6 +28,43 @@ export async function apiRequest<T>(
         body = JSON.stringify(args.body ?? {})
       }
       const response = await fetch(url, { method: args.method, headers, body })
+      if (!response.ok) {
+        const text = await response.text().catch(() => '')
+        const message = text || `HTTP ${response.status}`
+        if (response.status === 429 || response.status >= 500) {
+          throw new Error(message)
+        }
+        throw new AbortError(message)
+      }
+      return (await response.json()) as unknown
+    },
+    { retries: 2 },
+  )
+  if (schema) return parseArk(schema, json, 'API response')
+  return json as T
+}
+
+type FormRequestArgs =
+  | { method: 'POST'; path: string; token?: string; form: FormData }
+  | { method: 'POST'; url: string; token?: string; form: FormData }
+
+export async function apiRequestForm<T>(registry: string, args: FormRequestArgs): Promise<T>
+export async function apiRequestForm<T>(
+  registry: string,
+  args: FormRequestArgs,
+  schema: ArkValidator<T>,
+): Promise<T>
+export async function apiRequestForm<T>(
+  registry: string,
+  args: FormRequestArgs,
+  schema?: ArkValidator<T>,
+): Promise<T> {
+  const url = 'url' in args ? args.url : new URL(args.path, registry).toString()
+  const json = await pRetry(
+    async () => {
+      const headers: Record<string, string> = { Accept: 'application/json' }
+      if (args.token) headers.Authorization = `Bearer ${args.token}`
+      const response = await fetch(url, { method: args.method, headers, body: args.form })
       if (!response.ok) {
         const text = await response.text().catch(() => '')
         const message = text || `HTTP ${response.status}`

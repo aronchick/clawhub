@@ -4,7 +4,6 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { sha256Hex } from '../../skills'
 import type { GlobalOpts } from '../types'
 
 vi.mock('../../config.js', () => ({
@@ -16,10 +15,10 @@ vi.mock('../registry.js', () => ({
   getRegistry: (opts: unknown, params?: unknown) => mockGetRegistry(opts, params),
 }))
 
-const mockApiRequest = vi.fn()
+const mockApiRequestForm = vi.fn()
 vi.mock('../../http.js', () => ({
-  apiRequest: (registry: unknown, args: unknown, schema?: unknown) =>
-    mockApiRequest(registry, args, schema),
+  apiRequestForm: (registry: unknown, args: unknown, schema?: unknown) =>
+    mockApiRequestForm(registry, args, schema),
 }))
 
 const mockFail = vi.fn((message: string) => {
@@ -65,37 +64,7 @@ describe('cmdPublish', () => {
       await writeFile(join(folder, 'SKILL.md'), skillContent, 'utf8')
       await writeFile(join(folder, 'notes.md'), notesContent, 'utf8')
 
-      let uploadIndex = 0
-      mockApiRequest.mockImplementation(
-        async (_registry: string, args: { method: string; path: string }) => {
-          if (args.method === 'GET' && args.path.startsWith('/api/skill?slug=')) {
-            return { skill: null, latestVersion: { version: '9.9.9' } }
-          }
-          if (args.method === 'POST' && args.path === '/api/cli/upload-url') {
-            uploadIndex += 1
-            return { uploadUrl: `https://upload.example/${uploadIndex}` }
-          }
-          if (args.method === 'POST' && args.path === '/api/cli/publish') {
-            return { ok: true, skillId: 'skill_1', versionId: 'ver_1' }
-          }
-          throw new Error(`Unexpected apiRequest: ${args.method} ${args.path}`)
-        },
-      )
-
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: string, init?: RequestInit) => {
-          expect(url).toMatch(/^https:\/\/upload\.example\/\d+$/)
-          expect(init?.method).toBe('POST')
-          expect((init?.headers as Record<string, string>)?.['Content-Type']).toMatch(
-            /text\/(markdown|plain)/,
-          )
-          return new Response(JSON.stringify({ storageId: `st_${String(url).split('/').pop()}` }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        }) as unknown as typeof fetch,
-      )
+      mockApiRequestForm.mockResolvedValueOnce({ ok: true, skillId: 'skill_1', versionId: 'ver_1' })
 
       await cmdPublish(makeOpts(workdir), 'my-skill', {
         slug: 'my-skill',
@@ -105,30 +74,20 @@ describe('cmdPublish', () => {
         tags: 'latest',
       })
 
-      const publishCall = mockApiRequest.mock.calls.find((call) => {
+      const publishCall = mockApiRequestForm.mock.calls.find((call) => {
         const req = call[1] as { path?: string } | undefined
-        return req?.path === '/api/cli/publish'
+        return req?.path === '/api/v1/skills'
       })
       if (!publishCall) throw new Error('Missing publish call')
-      const publishBody = (publishCall[1] as { body?: unknown }).body as {
-        slug: string
-        displayName: string
-        version: string
-        changelog: string
-        tags: string[]
-        files: Array<{ path: string; sha256: string; storageId: string }>
-      }
-
-      expect(publishBody.slug).toBe('my-skill')
-      expect(publishBody.displayName).toBe('My Skill')
-      expect(publishBody.version).toBe('1.0.0')
-      expect(publishBody.changelog).toBe('')
-      expect(publishBody.tags).toEqual(['latest'])
-
-      const byPath = Object.fromEntries(publishBody.files.map((f) => [f.path, f]))
-      expect(Object.keys(byPath).sort()).toEqual(['SKILL.md', 'notes.md'])
-      expect(byPath['SKILL.md']?.sha256).toBe(sha256Hex(new TextEncoder().encode(skillContent)))
-      expect(byPath['notes.md']?.sha256).toBe(sha256Hex(new TextEncoder().encode(notesContent)))
+      const publishForm = (publishCall[1] as { form?: FormData }).form as FormData
+      const payload = JSON.parse(String(publishForm.get('payload')))
+      expect(payload.slug).toBe('my-skill')
+      expect(payload.displayName).toBe('My Skill')
+      expect(payload.version).toBe('1.0.0')
+      expect(payload.changelog).toBe('')
+      expect(payload.tags).toEqual(['latest'])
+      const files = publishForm.getAll('files') as Array<Blob & { name?: string }>
+      expect(files.map((file) => String(file.name ?? '')).sort()).toEqual(['SKILL.md', 'notes.md'])
     } finally {
       await rm(workdir, { recursive: true, force: true })
     }
@@ -141,28 +100,7 @@ describe('cmdPublish', () => {
       await mkdir(folder, { recursive: true })
       await writeFile(join(folder, 'SKILL.md'), '# Skill\n', 'utf8')
 
-      let uploadIndex = 0
-      mockApiRequest.mockImplementation(
-        async (_registry: string, args: { method: string; path: string }) => {
-          if (args.method === 'GET' && args.path.startsWith('/api/skill?slug=')) {
-            return { skill: { slug: 'existing-skill' }, latestVersion: { version: '1.0.0' } }
-          }
-          if (args.method === 'POST' && args.path === '/api/cli/upload-url') {
-            uploadIndex += 1
-            return { uploadUrl: `https://upload.example/${uploadIndex}` }
-          }
-          if (args.method === 'POST' && args.path === '/api/cli/publish') {
-            return { ok: true, skillId: 'skill_1', versionId: 'ver_2' }
-          }
-          throw new Error(`Unexpected apiRequest: ${args.method} ${args.path}`)
-        },
-      )
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(
-          async () => new Response(JSON.stringify({ storageId: 'st_1' }), { status: 200 }),
-        ) as unknown as typeof fetch,
-      )
+      mockApiRequestForm.mockResolvedValueOnce({ ok: true, skillId: 'skill_1', versionId: 'ver_2' })
 
       await cmdPublish(makeOpts(workdir), 'existing-skill', {
         version: '1.0.1',
@@ -170,9 +108,9 @@ describe('cmdPublish', () => {
         tags: 'latest',
       })
 
-      expect(mockApiRequest).toHaveBeenCalledWith(
+      expect(mockApiRequestForm).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ path: '/api/cli/publish', method: 'POST' }),
+        expect.objectContaining({ path: '/api/v1/skills', method: 'POST' }),
         expect.anything(),
       )
     } finally {

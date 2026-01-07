@@ -44,16 +44,16 @@ Stores your API token + cached registry URL.
 
 ### `whoami`
 
-- Verifies the stored token via `/api/cli/whoami`.
+- Verifies the stored token via `/api/v1/whoami`.
 
 ### `search <query...>`
 
-- Calls `/api/search?q=...`.
+- Calls `/api/v1/search?q=...`.
 
 ### `install <slug>`
 
-- Resolves latest version via `/api/skill?slug=...`.
-- Downloads zip via `/api/download`.
+- Resolves latest version via `/api/v1/skills/<slug>`.
+- Downloads zip via `/api/v1/download`.
 - Extracts into `<workdir>/<dir>/<slug>`.
 - Writes:
   - `<workdir>/.clawdhub/lock.json`
@@ -73,8 +73,7 @@ Stores your API token + cached registry URL.
 
 ### `publish <path>`
 
-- Uploads each file via `/api/cli/upload-url`.
-- Publishes via `/api/cli/publish`.
+- Publishes via `POST /api/v1/skills` (multipart).
 - Requires semver: `--version 1.2.3`.
 
 ### `sync`

@@ -117,6 +117,104 @@ export const ApiCliTelemetrySyncResponseSchema = type({
   ok: 'true',
 })
 
+export const ApiV1WhoamiResponseSchema = type({
+  user: {
+    handle: 'string|null',
+    displayName: 'string|null?',
+    image: 'string|null?',
+  },
+})
+
+export const ApiV1SearchResponseSchema = type({
+  results: type({
+    slug: 'string?',
+    displayName: 'string?',
+    summary: 'string|null?',
+    version: 'string|null?',
+    score: 'number',
+    updatedAt: 'number?',
+  }).array(),
+})
+
+export const ApiV1SkillListResponseSchema = type({
+  items: type({
+    slug: 'string',
+    displayName: 'string',
+    summary: 'string|null?',
+    tags: 'unknown',
+    stats: 'unknown',
+    createdAt: 'number',
+    updatedAt: 'number',
+    latestVersion: type({
+      version: 'string',
+      createdAt: 'number',
+      changelog: 'string',
+    }).optional(),
+  }).array(),
+  nextCursor: 'string|null',
+})
+
+export const ApiV1SkillResponseSchema = type({
+  skill: type({
+    slug: 'string',
+    displayName: 'string',
+    summary: 'string|null?',
+    tags: 'unknown',
+    stats: 'unknown',
+    createdAt: 'number',
+    updatedAt: 'number',
+  }).or('null'),
+  latestVersion: type({
+    version: 'string',
+    createdAt: 'number',
+    changelog: 'string',
+  }).or('null'),
+  owner: type({
+    handle: 'string|null',
+    displayName: 'string|null?',
+    image: 'string|null?',
+  }).or('null'),
+})
+
+export const ApiV1SkillVersionListResponseSchema = type({
+  items: type({
+    version: 'string',
+    createdAt: 'number',
+    changelog: 'string',
+    changelogSource: '"auto"|"user"|null?',
+  }).array(),
+  nextCursor: 'string|null',
+})
+
+export const ApiV1SkillVersionResponseSchema = type({
+  version: type({
+    version: 'string',
+    createdAt: 'number',
+    changelog: 'string',
+    changelogSource: '"auto"|"user"|null?',
+    files: 'unknown?',
+  }).or('null'),
+  skill: type({
+    slug: 'string',
+    displayName: 'string',
+  }).or('null'),
+})
+
+export const ApiV1SkillResolveResponseSchema = type({
+  match: type({ version: 'string' }).or('null'),
+  latestVersion: type({ version: 'string' }).or('null'),
+})
+
+export const ApiV1PublishResponseSchema = type({
+  ok: 'true',
+  skillId: 'string',
+  versionId: 'string',
+})
+
+export const ApiV1DeleteResponseSchema = type({
+  ok: 'true',
+})
+
 export const SkillInstallSpecSchema = type({
   id: 'string?',
   kind: '"brew"|"node"|"go"|"uv"',

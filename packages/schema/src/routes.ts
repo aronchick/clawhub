@@ -1,4 +1,4 @@
-export const ApiRoutes = {
+export const LegacyApiRoutes = {
   download: '/api/download',
   search: '/api/search',
   skill: '/api/skill',
@@ -9,4 +9,12 @@ export const ApiRoutes = {
   cliTelemetrySync: '/api/cli/telemetry/sync',
   cliSkillDelete: '/api/cli/skill/delete',
   cliSkillUndelete: '/api/cli/skill/undelete',
+} as const
+
+export const ApiRoutes = {
+  search: '/api/v1/search',
+  resolve: '/api/v1/resolve',
+  download: '/api/v1/download',
+  skills: '/api/v1/skills',
+  whoami: '/api/v1/whoami',
 } as const

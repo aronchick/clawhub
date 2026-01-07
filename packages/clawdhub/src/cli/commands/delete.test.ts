@@ -56,7 +56,7 @@ describe('delete/undelete', () => {
     await cmdDeleteSkill(makeOpts(), 'demo', { yes: true }, false)
     expect(mockApiRequest).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ method: 'POST', path: '/api/cli/skill/delete' }),
+      expect.objectContaining({ method: 'DELETE', path: '/api/v1/skills/demo' }),
       expect.anything(),
     )
   })
@@ -66,7 +66,7 @@ describe('delete/undelete', () => {
     await cmdUndeleteSkill(makeOpts(), 'demo', { yes: true }, false)
     expect(mockApiRequest).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ method: 'POST', path: '/api/cli/skill/undelete' }),
+      expect.objectContaining({ method: 'POST', path: '/api/v1/skills/demo/undelete' }),
       expect.anything(),
     )
   })
