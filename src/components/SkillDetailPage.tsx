@@ -401,7 +401,6 @@ export function SkillDetailPage({
                 ) : null}
               </div>
             ) : null}
-            <div className="sidebar-divider" />
             <div className="sidebar-section">
               <h3 className="section-title" style={{ fontSize: '1.1rem', margin: 0 }}>
                 Versions
