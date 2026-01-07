@@ -13,6 +13,9 @@
 - CLI: telemetry opt-out via `CLAWDHUB_DISABLE_TELEMETRY=1`.
 - Web: move theme picker into mobile menu.
 
+### Fixed
+- Web: handle shorthand hex colors in diff theme (thanks @dbhurley!).
+
 ## 0.0.5 - 2026-01-06
 
 ### Added
