@@ -464,8 +464,11 @@ function applyMonacoTheme(monaco: NonNullable<ReturnType<typeof useMonaco>>) {
 }
 
 function normalizeHex(value: string) {
-  if (value.startsWith('#')) return value
-  return '#000000'
+  if (!value.startsWith('#')) return '#000000'
+  if (value.length === 4) {
+    return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`
+  }
+  return value
 }
 
 function toRgba(color: string, alpha: number) {
