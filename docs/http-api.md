@@ -1,6 +1,8 @@
 ---
-title: 'HTTP API'
-description: 'Public endpoints + CLI endpoints (token auth).'
+summary: 'HTTP API reference (public + CLI endpoints + auth).'
+read_when:
+  - Adding/changing endpoints
+  - Debugging CLI ↔ registry requests
 ---
 
 # HTTP API
@@ -119,4 +121,3 @@ Schema:
 ```
 
 If you self-host, serve this file (or set `CLAWDHUB_REGISTRY` explicitly).
-

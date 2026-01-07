@@ -1,3 +1,9 @@
+---
+summary: 'Discord webhook events/payloads for skill publish + highlight.'
+read_when:
+  - Working on webhooks/integrations
+---
+
 # Webhooks (Discord)
 
 ClawdHub can post Discord embeds when skills are published or highlighted.

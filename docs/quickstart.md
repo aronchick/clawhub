@@ -1,6 +1,8 @@
 ---
-title: 'Quickstart'
-description: 'Run ClawdHub locally and exercise the CLI + API.'
+summary: 'Local setup + CLI smoke: login, search, install, publish, sync.'
+read_when:
+  - First run / local dev setup
+  - Verifying end-to-end flows
 ---
 
 # Quickstart
@@ -110,4 +112,3 @@ Dry run + non-interactive:
 ```bash
 bun clawdhub sync --all --dry-run --no-input
 ```
-

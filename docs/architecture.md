@@ -1,6 +1,8 @@
 ---
-title: 'Architecture'
-description: 'How the web app, Convex backend, and CLI interact.'
+summary: 'System overview: web app + Convex backend + CLI + shared schema.'
+read_when:
+  - Orienting in codebase
+  - Tracing a user flow across layers
 ---
 
 # Architecture
@@ -58,4 +60,3 @@ description: 'How the web app, Convex backend, and CLI interact.'
 - Compute fingerprint; compare to registry state.
 - Optionally reports telemetry (see `docs/telemetry.md`).
 - Publishes new/changed skills (skips modified installed skills inside install root).
-

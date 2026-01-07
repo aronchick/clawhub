@@ -1,6 +1,7 @@
 ---
-title: 'Troubleshooting'
-description: 'Common setup and runtime issues (CLI + backend).'
+summary: 'Common setup/runtime issues (CLI + backend) and fixes.'
+read_when:
+  - Something is broken and you need a fix-fast checklist
 ---
 
 # Troubleshooting
@@ -46,4 +47,3 @@ clawdhub sync --root /path/to/skills
 
 - Check `vercel.json` rewrite destination points at your Convex site URL.
 - Ensure `VITE_CONVEX_SITE_URL` and `CONVEX_SITE_URL` match your deployment.
-

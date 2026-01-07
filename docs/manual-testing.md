@@ -1,3 +1,10 @@
+---
+summary: 'Copy/paste CLI smoke checklist for local verification.'
+read_when:
+  - Pre-merge validation
+  - Reproducing a reported CLI bug
+---
+
 # Manual testing (CLI)
 
 ## Setup

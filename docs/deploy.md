@@ -1,6 +1,8 @@
 ---
-title: 'Deploy'
-description: 'Deploy web app + Convex backend, wire /api rewrites, set env.'
+summary: 'Deploy checklist: Convex backend + Vercel web app + /api rewrites.'
+read_when:
+  - Shipping to production
+  - Debugging /api routing
 ---
 
 # Deploy
@@ -74,4 +76,3 @@ Then:
 clawdhub login --site https://<site>
 clawdhub whoami
 ```
-

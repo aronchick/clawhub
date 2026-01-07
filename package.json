@@ -9,6 +9,7 @@
     "dev": "bun --bun vite dev --port 3000",
     "build": "bun --bun vite build",
     "preview": "bun --bun vite preview",
+    "docs:list": "bun scripts/docs-list.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run -c vitest.e2e.config.ts",

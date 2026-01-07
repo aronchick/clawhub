@@ -1,6 +1,8 @@
 ---
-title: 'Auth'
-description: 'GitHub OAuth (web) + API tokens (CLI).'
+summary: 'Auth overview: GitHub OAuth (web) + API tokens (CLI).'
+read_when:
+  - Working on login/token flows
+  - Debugging 401s
 ---
 
 # Auth
@@ -50,4 +52,3 @@ Override:
 
 - Tokens can be revoked in the web UI.
 - Revoked tokens return `401 Unauthorized` on CLI endpoints.
-

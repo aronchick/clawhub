@@ -1,6 +1,8 @@
 ---
-title: 'Docs'
-description: 'ClawdHub documentation index + reading order.'
+summary: 'Documentation index + reading order.'
+read_when:
+  - New contributor onboarding
+  - Looking for the right doc
 ---
 
 # Docs
@@ -28,4 +30,3 @@ Feature/ops docs (already present):
 Docs tooling:
 
 - `docs/mintlify.md`: publish these docs with Mintlify.
-

@@ -1,6 +1,8 @@
 ---
-title: 'Skill Format'
-description: 'What the CLI uploads and what the registry stores.'
+summary: 'Skill folder format, required files, allowed file types, limits.'
+read_when:
+  - Publishing skills
+  - Debugging publish/sync failures
 ---
 
 # Skill format
@@ -54,4 +56,3 @@ Limits (server-side):
 
 - Each publish creates a new version (semver).
 - Tags are string pointers to a version; `latest` is commonly used.
-

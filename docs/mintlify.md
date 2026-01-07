@@ -1,6 +1,7 @@
 ---
-title: 'Mintlify'
-description: 'Publish docs/ as a Mintlify docs site.'
+summary: 'Mintlify setup notes for publishing docs/.'
+read_when:
+  - Setting up docs site
 ---
 
 # Mintlify
@@ -40,4 +41,3 @@ Notes:
 - Keep “Quickstart” copy/paste friendly.
 - Provide CLI + HTTP API reference pages (done here).
 - Add a Troubleshooting page for common setup failures.
-

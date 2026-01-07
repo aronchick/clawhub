@@ -1,6 +1,8 @@
 ---
-title: 'CLI'
-description: 'Commands, flags, config files, and state on disk.'
+summary: 'CLI reference: commands, flags, config, lockfile, sync behavior.'
+read_when:
+  - Working on CLI behavior
+  - Debugging install/update/sync
 ---
 
 # CLI
@@ -91,4 +93,3 @@ Telemetry:
 
 - Sent during `sync` when logged in, unless `CLAWDHUB_DISABLE_TELEMETRY=1`.
 - Details: `docs/telemetry.md`.
-

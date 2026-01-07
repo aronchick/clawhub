@@ -1,3 +1,10 @@
+---
+summary: 'Install telemetry collected via `clawdhub sync` + opt-out.'
+read_when:
+  - Working on telemetry / privacy controls
+  - Questions about what data is collected
+---
+
 # Telemetry
 
 ClawdHub uses **minimal telemetry** to compute **install counts** (what’s actually in use) and to power better sorting/filtering.
@@ -82,4 +89,3 @@ export CLAWDHUB_DISABLE_TELEMETRY=1
 ```
 
 With this set, the CLI will not send telemetry during `clawdhub sync`.
-
