@@ -1396,7 +1396,7 @@ code {
   gap: 8px;
   max-height: 420px;
   overflow: auto;
-  padding-right: 4px;
+  padding: 4px 6px 4px 4px;
 }
 
 .diff-file {
