@@ -16,6 +16,12 @@ function resolveConfigPath(baseDir: string): string {
   return clawhubPath
 }
 
+function isNonFatalChmodError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const code = (error as NodeJS.ErrnoException).code
+  return code === 'EPERM' || code === 'ENOTSUP' || code === 'EOPNOTSUPP' || code === 'EINVAL'
+}
+
 export function getGlobalConfigPath() {
   const override =
     process.env.CLAWHUB_CONFIG_PATH?.trim() ?? process.env.CLAWDHUB_CONFIG_PATH?.trim()
@@ -68,6 +74,10 @@ export async function writeGlobalConfig(config: GlobalConfig) {
 
   // Ensure permissions on existing files (writeFile mode only applies on create)
   if (process.platform !== 'win32') {
-    await chmod(path, 0o600)
+    try {
+      await chmod(path, 0o600)
+    } catch (error) {
+      if (!isNonFatalChmodError(error)) throw error
+    }
   }
 }
