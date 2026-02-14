@@ -3,6 +3,21 @@
 ## Unreleased
 
 ### Added
+- Admin: add manual unban for banned users (clears `deletedAt` + `banReason`, audit log entry). Revoked API tokens stay revoked.
+
+### Changed
+- Quality gate: language-aware word counting (`Intl.Segmenter`) and new `cjkChars` signal to reduce false rejects for non-Latin docs.
+- Jobs: run skill stat event processing every 5 minutes (was 15).
+- API performance: batch resolve skill/soul tags in v1 list/get endpoints (fewer action->query round-trips) (#112) (thanks @mkrokosz).
+
+### Fixed
+- Users: sync handle on ensure when GitHub login changes (#293) (thanks @christianhpoe).
+- Upload gate: fetch GitHub account age by immutable account ID (prevents username swaps) (#116) (thanks @mkrokosz).
+- API: return proper status codes for delete/undelete errors (#35) (thanks @sergical).
+- API: for owners, return clearer status/messages for hidden/soft-deleted skills instead of a generic 404.
+- HTTP/CORS: add preflight handler + include CORS headers on API/download errors; CLI: include auth token for owner-visible installs/updates (#146) (thanks @Grenghis-Khan).
+- CLI: clarify `logout` only removes the local token; token remains valid until revoked in the web UI (#166) (thanks @aronchick).
+- Skills: keep global sorting across pagination on `/skills` (thanks @CodeBBakGoSu, #98).
 - CLI/API: add `set-role` to change user roles (admin only).
 - Security: quarantine skill publishes with VirusTotal scans + UI (thanks @aleph8, #130).
 - Testing: add tests for badges, skillZip, uploadFiles expandDroppedItems, and ark schema error truncation.
