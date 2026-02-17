@@ -85,7 +85,9 @@ function SkillCard({ skill, ownerHandle }: { skill: DashboardSkill; ownerHandle:
         </div>
         {skill.summary && <p className="dashboard-skill-description">{skill.summary}</p>}
         <div className="dashboard-skill-stats">
-          <span>⤓ {formatCompactStat(skill.stats.downloads)}</span>
+          <span>
+            <Package size={13} aria-hidden="true" /> {formatCompactStat(skill.stats.downloads)}
+          </span>
           <span>★ {formatCompactStat(skill.stats.stars)}</span>
           <span>{skill.stats.versions} v</span>
         </div>
