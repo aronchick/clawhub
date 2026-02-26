@@ -52,6 +52,7 @@
 - API tests: lock `Retry-After` behavior to relative-delay semantics for v1 search 429s (#421) (thanks @apoorvdarshan).
 - CLI tests: assert 5xx HTTP responses still perform retry attempts before surfacing final error (#457) (thanks @YonghaoZhao722).
 - GitHub import: improve storage/publish failure errors with actionable context; add regression tests for error formatting (#512) (thanks @vassiliylakhonin).
+- CLI: show manual URL guidance when automatic browser opening is unavailable; add regression tests for opener errors (#163) (thanks @aronchick).
 
 ## 0.6.1 - 2026-02-13
 
