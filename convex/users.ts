@@ -8,6 +8,7 @@ import { assertAdmin, assertModerator, requireUser } from './lib/access'
 import { syncGitHubProfile } from './lib/githubAccount'
 import { toPublicUser } from './lib/public'
 import { buildUserSearchResults } from './lib/userSearch'
+import { insertStatEvent } from './skillStatEvents'
 
 const DEFAULT_ROLE = 'user'
 const ADMIN_HANDLE = 'steipete'
@@ -425,8 +426,16 @@ async function banUserWithActor(
   if (reason && reason.length > 500) {
     throw new Error('Reason too long (max 500 chars)')
   }
-  if (target.deletedAt || target.deactivatedAt) {
-    return { ok: true as const, alreadyBanned: true, deletedSkills: 0 }
+  if (target.deactivatedAt) {
+    return { ok: true as const, alreadyBanned: true, deletedSkills: 0, deletedComments: { skillComments: 0, soulComments: 0 } }
+  }
+  if (target.deletedAt) {
+    const deletedComments = await softDeleteUserCommentsForBan(ctx, {
+      userId: targetUserId,
+      deletedBy: actor._id,
+      deletedAt: target.deletedAt,
+    })
+    return { ok: true as const, alreadyBanned: true, deletedSkills: 0, deletedComments }
   }
 
   const banSkillsResult = (await ctx.runMutation(
@@ -451,6 +460,12 @@ async function banUserWithActor(
     }
   }
 
+  const deletedComments = await softDeleteUserCommentsForBan(ctx, {
+    userId: targetUserId,
+    deletedBy: actor._id,
+    deletedAt: now,
+  })
+
   await ctx.db.patch(targetUserId, {
     deletedAt: now,
     role: 'user',
@@ -465,11 +480,22 @@ async function banUserWithActor(
     action: 'user.ban',
     targetType: 'user',
     targetId: targetUserId,
-    metadata: { hiddenSkills: hiddenCount, reason: reason || undefined },
+    metadata: {
+      hiddenSkills: hiddenCount,
+      deletedSkillComments: deletedComments.skillComments,
+      deletedSoulComments: deletedComments.soulComments,
+      reason: reason || undefined,
+    },
     createdAt: now,
   })
 
-  return { ok: true as const, alreadyBanned: false, deletedSkills: hiddenCount, scheduledSkills }
+  return {
+    ok: true as const,
+    alreadyBanned: false,
+    deletedSkills: hiddenCount,
+    deletedComments,
+    scheduledSkills,
+  }
 }
 
 async function unbanUserWithActor(
@@ -640,6 +666,12 @@ export const autobanMalwareAuthorInternal = internalMutation({
       }
     }
 
+    const deletedComments = await softDeleteUserCommentsForBan(ctx, {
+      userId: args.ownerUserId,
+      deletedBy: args.ownerUserId,
+      deletedAt: now,
+    })
+
     // Ban the user
     await ctx.db.patch(args.ownerUserId, {
       deletedAt: now,
@@ -663,6 +695,8 @@ export const autobanMalwareAuthorInternal = internalMutation({
         sha256hash: args.sha256hash,
         slug: args.slug,
         hiddenSkills: hiddenCount,
+        deletedSkillComments: deletedComments.skillComments,
+        deletedSoulComments: deletedComments.soulComments,
       },
       createdAt: now,
     })
@@ -671,6 +705,60 @@ export const autobanMalwareAuthorInternal = internalMutation({
       `[autoban] Banned ${target.handle ?? args.ownerUserId} — malicious skill: ${args.slug}`,
     )
 
-    return { ok: true, alreadyBanned: false, deletedSkills: hiddenCount, scheduledSkills }
+    return {
+      ok: true,
+      alreadyBanned: false,
+      deletedSkills: hiddenCount,
+      deletedComments,
+      scheduledSkills,
+    }
   },
 })
+
+async function softDeleteUserCommentsForBan(
+  ctx: MutationCtx,
+  args: { userId: Id<'users'>; deletedBy: Id<'users'>; deletedAt: number },
+) {
+  let skillComments = 0
+  let soulComments = 0
+
+  const comments = await ctx.db
+    .query('comments')
+    .withIndex('by_user', (q) => q.eq('userId', args.userId))
+    .collect()
+  for (const comment of comments) {
+    if (comment.softDeletedAt) continue
+    await ctx.db.patch(comment._id, {
+      softDeletedAt: args.deletedAt,
+      deletedBy: args.deletedBy,
+    })
+    await insertStatEvent(ctx, { skillId: comment.skillId, kind: 'uncomment' })
+    skillComments += 1
+  }
+
+  const soulCommentDocs = await ctx.db
+    .query('soulComments')
+    .withIndex('by_user', (q) => q.eq('userId', args.userId))
+    .collect()
+  const soulCommentCounts = new Map<Id<'souls'>, number>()
+  for (const comment of soulCommentDocs) {
+    if (comment.softDeletedAt) continue
+    await ctx.db.patch(comment._id, {
+      softDeletedAt: args.deletedAt,
+      deletedBy: args.deletedBy,
+    })
+    soulCommentCounts.set(comment.soulId, (soulCommentCounts.get(comment.soulId) ?? 0) + 1)
+    soulComments += 1
+  }
+
+  for (const [soulId, count] of soulCommentCounts.entries()) {
+    const soul = await ctx.db.get(soulId)
+    if (!soul) continue
+    await ctx.db.patch(soulId, {
+      stats: { ...soul.stats, comments: Math.max(0, soul.stats.comments - count) },
+      updatedAt: args.deletedAt,
+    })
+  }
+
+  return { skillComments, soulComments }
+}

@@ -5,8 +5,13 @@ vi.mock('./lib/access', async () => {
   return { ...actual, requireUser: vi.fn() }
 })
 
+vi.mock('./skillStatEvents', () => ({
+  insertStatEvent: vi.fn(),
+}))
+
 const { requireUser } = await import('./lib/access')
-const { ensureHandler, list, searchInternal } = await import('./users')
+const { insertStatEvent } = await import('./skillStatEvents')
+const { ensureHandler, list, searchInternal, banUserInternal } = await import('./users')
 
 function makeCtx() {
   const patch = vi.fn()
@@ -28,6 +33,48 @@ function makeListCtx(users: Array<Record<string, unknown>>) {
     query,
     get,
   }
+}
+
+function makeBanCtx() {
+  const patch = vi.fn()
+  const insert = vi.fn()
+  const get = vi.fn()
+  const runMutation = vi.fn()
+  const apiTokens = [{ _id: 'apiTokens:1', revokedAt: undefined }]
+  const userComments = [
+    {
+      _id: 'comments:active',
+      userId: 'users:target',
+      skillId: 'skills:1',
+      softDeletedAt: undefined,
+    },
+    {
+      _id: 'comments:already-deleted',
+      userId: 'users:target',
+      skillId: 'skills:1',
+      softDeletedAt: 123,
+    },
+  ]
+  const soulComments = [
+    {
+      _id: 'soulComments:active',
+      userId: 'users:target',
+      soulId: 'souls:1',
+      softDeletedAt: undefined,
+    },
+  ]
+
+  const query = vi.fn((table: string) => ({
+    withIndex: (_index: string, _cb: unknown) => {
+      if (table === 'apiTokens') return { collect: vi.fn().mockResolvedValue(apiTokens) }
+      if (table === 'comments') return { collect: vi.fn().mockResolvedValue(userComments) }
+      if (table === 'soulComments') return { collect: vi.fn().mockResolvedValue(soulComments) }
+      throw new Error(`Unexpected table ${table}`)
+    },
+  }))
+
+  const ctx = { db: { patch, insert, get, query }, runMutation } as never
+  return { ctx, patch, insert, get, runMutation }
 }
 
 describe('ensureHandler', () => {
@@ -441,5 +488,122 @@ describe('users.searchInternal', () => {
     expect(collect).not.toHaveBeenCalled()
     expect(result.total).toBe(200)
     expect(result.items).toHaveLength(200)
+  })
+})
+
+describe('users.banUserInternal', () => {
+  afterEach(() => {
+    vi.mocked(insertStatEvent).mockReset()
+    vi.restoreAllMocks()
+  })
+
+  it('soft-deletes target user comments (skill + soul) during ban', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+    const { ctx, get, patch, insert, runMutation } = makeBanCtx()
+
+    get.mockImplementation(async (id: string) => {
+      if (id === 'users:actor') return { _id: 'users:actor', role: 'moderator' }
+      if (id === 'users:target') return { _id: 'users:target', role: 'user' }
+      if (id === 'souls:1') return { _id: 'souls:1', stats: { comments: 3 } }
+      return null
+    })
+
+    runMutation
+      .mockResolvedValueOnce({ hiddenCount: 2, scheduled: false })
+      .mockResolvedValueOnce(undefined)
+
+    const handler = (
+      banUserInternal as unknown as {
+        _handler: (
+          ctx: unknown,
+          args: { actorUserId: string; targetUserId: string; reason?: string },
+        ) => Promise<unknown>
+      }
+    )._handler
+
+    const result = (await handler(ctx, {
+      actorUserId: 'users:actor',
+      targetUserId: 'users:target',
+      reason: 'spam',
+    })) as {
+      ok: boolean
+      alreadyBanned: boolean
+      deletedComments: { skillComments: number; soulComments: number }
+    }
+
+    expect(result).toMatchObject({
+      ok: true,
+      alreadyBanned: false,
+      deletedComments: { skillComments: 1, soulComments: 1 },
+    })
+
+    expect(patch).toHaveBeenCalledWith('comments:active', {
+      softDeletedAt: 1_700_000_000_000,
+      deletedBy: 'users:actor',
+    })
+    expect(patch).toHaveBeenCalledWith('soulComments:active', {
+      softDeletedAt: 1_700_000_000_000,
+      deletedBy: 'users:actor',
+    })
+    expect(patch).toHaveBeenCalledWith('souls:1', {
+      stats: { comments: 2 },
+      updatedAt: 1_700_000_000_000,
+    })
+
+    expect(insertStatEvent).toHaveBeenCalledWith(ctx, { skillId: 'skills:1', kind: 'uncomment' })
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({
+        action: 'user.ban',
+        metadata: expect.objectContaining({
+          deletedSkillComments: 1,
+          deletedSoulComments: 1,
+        }),
+      }),
+    )
+  })
+
+  it('re-ban of already banned user still cleans lingering comments', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+    const { ctx, get, patch, runMutation } = makeBanCtx()
+
+    get.mockImplementation(async (id: string) => {
+      if (id === 'users:actor') return { _id: 'users:actor', role: 'moderator' }
+      if (id === 'users:target') return { _id: 'users:target', role: 'user', deletedAt: 1_600_000_000_000 }
+      if (id === 'souls:1') return { _id: 'souls:1', stats: { comments: 3 } }
+      return null
+    })
+
+    const handler = (
+      banUserInternal as unknown as {
+        _handler: (
+          ctx: unknown,
+          args: { actorUserId: string; targetUserId: string; reason?: string },
+        ) => Promise<unknown>
+      }
+    )._handler
+
+    const result = (await handler(ctx, {
+      actorUserId: 'users:actor',
+      targetUserId: 'users:target',
+      reason: 'cleanup',
+    })) as {
+      ok: boolean
+      alreadyBanned: boolean
+      deletedComments: { skillComments: number; soulComments: number }
+      deletedSkills: number
+    }
+
+    expect(result).toEqual({
+      ok: true,
+      alreadyBanned: true,
+      deletedSkills: 0,
+      deletedComments: { skillComments: 1, soulComments: 1 },
+    })
+    expect(runMutation).not.toHaveBeenCalled()
+    expect(patch).toHaveBeenCalledWith('comments:active', {
+      softDeletedAt: 1_600_000_000_000,
+      deletedBy: 'users:actor',
+    })
   })
 })

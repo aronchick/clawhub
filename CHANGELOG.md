@@ -16,6 +16,7 @@
 ### Changed
 - Security/docs: document comment reporting/auto-hide behavior alongside existing skill reporting rules.
 - Security/moderation: add bounded explainable auto-ban reasons for scam comments and protect moderator/admin accounts from automated bans.
+- Moderation: banning users now also soft-deletes their authored comments (skill + soul), including legacy cleanup on re-ban.
 - Quality gate: language-aware word counting (`Intl.Segmenter`) and new `cjkChars` signal to reduce false rejects for non-Latin docs.
 - Jobs: run skill stat event processing every 5 minutes (was 15).
 - API performance: batch resolve skill/soul tags in v1 list/get endpoints (fewer action->query round-trips) (#112) (thanks @mkrokosz).
@@ -27,6 +28,7 @@
 
 ### Fixed
 - Skills hard-delete: delete `commentReports` rows during moderation cleanup to avoid orphaned report records.
+- Comments: hide entries authored by deleted/deactivated users in `comments:listBySkill`.
 - Admin API: `POST /api/v1/users/reclaim` now performs non-destructive root-slug owner transfer
   (preserves existing skill versions/stats/metadata) and clears active slug reservations.
 - Users: sync handle on ensure when GitHub login changes (#293) (thanks @christianhpoe).

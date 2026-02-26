@@ -14,15 +14,15 @@ export const listBySkill = query({
       .order('desc')
       .take(limit)
 
-    const visible = comments.filter((comment) => !comment.softDeletedAt)
-    return Promise.all(
-      visible.map(
-        async (comment): Promise<{ comment: Doc<'comments'>; user: PublicUser | null }> => ({
-          comment,
-          user: toPublicUser(await ctx.db.get(comment.userId)),
-        }),
-      ),
+    const rows = await Promise.all(
+      comments.map(async (comment): Promise<{ comment: Doc<'comments'>; user: PublicUser } | null> => {
+        if (comment.softDeletedAt) return null
+        const user = toPublicUser(await ctx.db.get(comment.userId))
+        if (!user) return null
+        return { comment, user }
+      }),
     )
+    return rows.filter((row): row is { comment: Doc<'comments'>; user: PublicUser } => row !== null)
   },
 })
 

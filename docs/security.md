@@ -58,6 +58,7 @@ read_when:
 
 - Banning a user:
   - hard-deletes all owned skills
+  - soft-deletes all authored skill comments + soul comments
   - revokes API tokens
   - sets `deletedAt` on the user
 - Admins can manually unban (`deletedAt` + `banReason` cleared); revoked API tokens
